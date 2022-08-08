@@ -1,8 +1,8 @@
 # IMC-project
-Archive of all the programs used in a smart hydroponics project of mechatronics students of the INTEC.
+Archive of all the programs used in a smart hydroponics project of mechatronics students of the INTEC by Diego Morales and John Ureña.
 
 ## Folder contents
-### Codigos Matlab
+### Matlab Codes
 1. creatLgraphUsingConnectios: Supporting function that creates a Layer Graph object of a neural network in Matlab Deep Learning Toolbox
 2. freezeWeights: Supporting function to freeze the weights of the first layers of the neural network for transfer learning.
 3. findLayersToReplace: Supporting function to find learnable  layers on a neural netwokr for transfer learning.
