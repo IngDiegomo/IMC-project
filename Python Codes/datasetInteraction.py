@@ -1,4 +1,6 @@
+from textwrap import indent
 import numpy as np
+import json
 
 def getTodayValues(day):
     """
@@ -41,6 +43,20 @@ def modifyCurve(deficiency, day):
     np.savetxt("actual_dosing.csv", actualDataset, delimiter=",")
     np.savetxt("next_dosing.csv", nextDataset, delimiter=",")       
 
+"""
+dataset = np.genfromtxt('actual_dosing.csv', delimiter=',' , encoding="utf8")
 
+dataDict = {
+    'points':[]
+}
 
-
+for i in range (0,len(dataset[1:,0])):
+    point = {
+        'x': dataset[i+1,0],
+        'y': dataset[i+1,1]
+    }
+    dataDict['points'].append(point)
+dataDict = json.dumps(dataDict, indent= 2)
+print(dataDict)
+print (len(dataDict.encode('utf-8')))
+"""
