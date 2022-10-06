@@ -44,10 +44,10 @@ namespace communications
             
             case '3':                                         // Read all the scales and send the readings through serial
                 float scaleReadings[4];
-                scaleReadings[0] = scaleN.get_units();
-                scaleReadings[1] = scaleP.get_units();
-                scaleReadings[2] = scaleK.get_units();
-                scaleReadings[3] = scaleTank.get_units();
+                scaleReadings[0] = sensors::getScaleMedian(1);
+                scaleReadings[1] = sensors::getScaleMedian(2);
+                scaleReadings[2] = sensors::getScaleMedian(3);
+                scaleReadings[3] = sensors::getScaleMedian(4);
 
                 for (int i = 0; i <4; i++)
                 {

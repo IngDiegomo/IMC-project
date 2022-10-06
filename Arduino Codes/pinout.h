@@ -41,6 +41,9 @@
 #define MOTOR_P                 8
 #define MOTOR_K                 9
 
+// Pin for emergency button
+#define EMERGENCY               3
+
 // Function for setting up all pin modes
 void pinSetup();
 

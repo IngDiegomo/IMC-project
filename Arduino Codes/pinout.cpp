@@ -2,6 +2,9 @@
 
 void pinSetup()
 {
+    // Set emergency as input
+    pinMode(EMERGENCY, INPUT);
+
     // Set tds as inputs
     pinMode(TDS_PIN_N,INPUT);
     pinMode(TDS_PIN_P,INPUT);

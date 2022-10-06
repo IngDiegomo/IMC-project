@@ -7,6 +7,16 @@ char startNutrientFilling;
 unsigned long tiempomedir1;
 unsigned long tiempomedir2;
 
+float actualVolumeN; 
+float actualVolumeP; 
+float actualVolumeK; 
+float actualVolumeTank; 
+float volumeToDose,volumeToDoseDT;
+float volumeN; 
+float volumeP; 
+float volumeK; 
+int weigthValues = 20;
+
 
 void setup()
 {
@@ -16,8 +26,10 @@ void setup()
     
     while(!Serial.available());
     //asd = Serial.parseInt();
+    //volumeToDose = asd;
+    //volumeToDoseDT = 508 - asd*3;
     while(Serial.available()>0) Serial.read();
-    //Serial.println("Iniciando");
+    
     
 
     sensors::initializeScales();
@@ -25,8 +37,7 @@ void setup()
     //sensors::scaleOn(scaleN,false);
     //sensors::scaleOn(scaleP,false);
     //sensors::scaleOn(scaleTank,false);
-
-    
+    //Serial.println("Iniciando");
 
     
 }
@@ -41,16 +52,24 @@ void loop()
     //Serial.println(tiempomedir2-tiempomedir1);
 
     // Con esto reviso el comportamiento de las 4 básculas simultaneamente
-    communications::sendSensorInfo('3');
+    //communications::sendSensorInfo('3');
     //Serial.print(scaleK.get_units());
     //Serial.print('\n'); 
 
-    /*
+    //digitalWrite(FILLING_VALVE_TANK,HIGH);
+    //Serial.println("Asd");
+
+    //digitalWrite(DOSE_PUMP_N, HIGH);
+    //digitalWrite(DOSE_PUMP_P, HIGH);
+    //digitalWrite(DOSE_PUMP_K, HIGH);
+
+
+
     
     routines::nutrientFilling();
     routines::waterFilling();
     routines::mixing();
-    
+ 
     while (true)
     {
         while(!Serial.available());
@@ -61,10 +80,12 @@ void loop()
         {
             case '1':
                 routines::dosing();
+                
                 break;
 
                 
             case '2':
+                routines::irrigation();
                 break;
 
 
@@ -81,13 +102,9 @@ void loop()
             default:
 
                 break; 
-
-
-
         }
     
     }
-    */
     
 
     /* Con esto probe el sistema de seguridad y el agitado
@@ -110,8 +127,64 @@ void loop()
 
     */
 
+    /*
+     // Con esto probamos la dosificacion
+    if (asd != 0){
+    Serial.println("Dosificando");
+    actualVolumeN = sensors::getNValuesFiltered(1, weigthValues);
+    actualVolumeP = sensors::getNValuesFiltered(2, weigthValues);
+    actualVolumeK = sensors::getNValuesFiltered(3, weigthValues);
+    actualVolumeTank = sensors::getNValuesFiltered(4, weigthValues);
+    
+    volumeN = actualVolumeN - volumeToDose + 5;
+    volumeP = actualVolumeP - volumeToDose + 5;
+    volumeK = actualVolumeK - volumeToDose + 5;
+
+    routines::doseToTankDebug(DOSE_PUMP_N,volumeN,scaleN);
+    routines::doseToTankDebug(DOSE_PUMP_P,volumeP,scaleP);
+    routines::doseToTankDebug(DOSE_PUMP_K,volumeK,scaleK);
+    
 
     
+    float debugVolumeTank = sensors::getNValuesMedian(4, weigthValues);
+
+
+        while (true)
+        {
+            debugVolumeTank = sensors::getNValuesMedian(4, weigthValues);
+            if (debugVolumeTank > (actualVolumeTank + volumeToDose))
+            {
+                break;
+            }
+        }
+        digitalWrite(FILLING_VALVE_TANK,HIGH);
+        digitalWrite(FILLING_PUMP,HIGH);
+        Serial.print(digitalRead(FILLING_VALVE_TANK));
+        Serial.print('\n'); 
+        Serial.print(digitalRead(FILLING_PUMP));
+        Serial.print('\n'); 
+        while ((sensors::getScaleFiltered(4))<volumeToDoseDT)
+        {
+            Serial.println(sensors::getScaleFiltered(4));
+        }
+        digitalWrite(FILLING_PUMP,LOW);
+        digitalWrite(FILLING_VALVE_TANK,LOW);
+        Serial.print(digitalRead(FILLING_VALVE_TANK));
+        Serial.print('\n'); 
+        Serial.println(digitalRead(FILLING_PUMP));
+        
+        Serial.print('d');
+        Serial.print('\n');
+    
+    
+        
+    }
+    Serial.println("Dime");
+    while(!Serial.available());
+    asd = Serial.parseInt();
+    volumeToDose = asd;
+    while(Serial.available()>0) Serial.read();
+    */
     
 
     /* Con esto probe la rutina de llenado
@@ -145,8 +218,8 @@ void loop()
         digitalWrite(FILLING_VALVE_TANK,LOW);
 
     }
-    */
     
+ */   
    
     
     
