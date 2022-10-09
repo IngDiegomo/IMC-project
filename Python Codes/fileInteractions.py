@@ -17,4 +17,9 @@ def checkClassificationResults():
     elif label.find('ZR,NP_Ca') != -1:
         return 3
 
-    
+
+def classifyStaticPic():
+    subprocess.call("/home/pi/MATLAB_ws/R2021a/C/Users/diego/Desktop/Trimestre_17_FINAL_YA_FJLHI_GJIOA_UFKHAG/P2/Software/Codigos_Matlab/raspiStaticPicP2", shell = True)
+  
+
+def movePicToClassify(pic)

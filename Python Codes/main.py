@@ -108,7 +108,12 @@ ser.write(b'0')
 checksScreenDict = routines.nutrientFilling(ser, checksScreenDict, conn)
 hmiScreenDict = routines.waterFilling(ser, conn, maxed, hmiScreenDict)
 hmiScreenDict = routines.mixing(ser, conn, hmiScreenDict)
+hmiScreenDict = routines.dosing(dosingDay, ser, conn, maxed, maxedTank, hmiScreenDict)
+hmiScreenDict = routines.irrigationDemo(ser,conn,maxedTank,hmiScreenDict)
 
+
+
+"""
 if (doseWhenReady):
     hmiScreenDict = routines.dosing(dosingDay, ser, conn, maxed, maxedTank, hmiScreenDict)
     delta = datetime.timedelta(days=1, minutes= 0, seconds = 0)
@@ -147,5 +152,5 @@ while(1):
             photoDay = 0
         
         hmiScreenDict = routines.irrigation(ser, conn, maxed, maxedTank, nIrrigation, dosageHour, doseWhenReady, hmiScreenDict)
-        
+"""        
 

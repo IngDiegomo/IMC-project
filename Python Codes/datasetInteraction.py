@@ -1,6 +1,7 @@
 from textwrap import indent
 import numpy as np
 import json
+import time
 
 def getTodayValues(day):
     """
@@ -43,20 +44,38 @@ def modifyCurve(deficiency, day):
     np.savetxt("actual_dosing.csv", actualDataset, delimiter=",")
     np.savetxt("next_dosing.csv", nextDataset, delimiter=",")       
 
-"""
-dataset = np.genfromtxt('actual_dosing.csv', delimiter=',' , encoding="utf8")
+def sendActualCurveCsv():
 
-dataDict = {
-    'points':[]
-}
+    dataset = np.genfromtxt('actual_dosing.csv', delimiter=',' , encoding="utf8")
 
-for i in range (0,len(dataset[1:,0])):
-    point = {
-        'x': dataset[i+1,0],
-        'y': dataset[i+1,1]
-    }
-    dataDict['points'].append(point)
-dataDict = json.dumps(dataDict, indent= 2)
-print(dataDict)
-print (len(dataDict.encode('utf-8')))
-"""
+    for j in range (1,4):
+        dataDict = {
+            'points':[]
+        }
+
+        for i in range (0,len(dataset[1:,0])):
+            point = {
+                'x': dataset[i+1,0],
+                'y': dataset[i+1,j]
+            }
+            dataDict['points'].append(point)
+            dataDict = json.dumps(dataDict)
+            time.sleep(0.5)
+
+def sendNextCurveCsv():
+
+    dataset = np.genfromtxt('next_dosing.csv', delimiter=',' , encoding="utf8")
+
+    for j in range (1,4):
+        dataDict = {
+            'points':[]
+        }
+
+        for i in range (0,len(dataset[1:,0])):
+            point = {
+                'x': dataset[i+1,0],
+                'y': dataset[i+1,j]
+            }
+            dataDict['points'].append(point)
+            dataDict = json.dumps(dataDict)
+            time.sleep(0.5)

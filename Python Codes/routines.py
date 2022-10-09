@@ -214,9 +214,8 @@ def dosing(day, serial, socket, maxed, maxedTank, hmiDict):            # Dosing 
         data = data.decode()
         
         if data == "1\n" or data == "0\n":      # If data is 1 or 0
-
-            dosePumps = [routineStep==0, routineStep==2, routineStep==4]     # Dose pumps values depend on the routine step
-            hmiDict['dosePumps'] = dosePumps
+    
+            hmiDict['dosePumps'] =  [routineStep==0, routineStep==2, routineStep==4]     # Dose pumps values depend on the routine step
             hmiDict['fillingValves'][3] = routineStep == 6                                   # Filling valves and pump values depend on the routine step
             hmiDict['fillingPump'] = routineStep == 6
             routineStep += 1
@@ -283,6 +282,8 @@ def irrigation(serial, socket, maxed, maxedTank, nIrrigation, doseTime, doseWhen
         minutesStart = timeStart.hour*60 + timeStart.minute
         hmiDict["irrigationPump"] = True
         hmiDict["aerationPump"] = True
+        iPadComms.sendJson(socket,hmiDict)
+        time.sleep(0.5)
         while(volumeIrrigated < volumeToIrrigate):
             levels = arduinoComms.recieveSensorInfo(serial)                                 # Recieve the levels from the arduino
             levelsNutrientTanks = [str(round((abs(i)/maxed)*100,2))+"%" for i in levels]    # Get the percentages for the nutrient tanks
@@ -305,6 +306,7 @@ def irrigation(serial, socket, maxed, maxedTank, nIrrigation, doseTime, doseWhen
         hmiDict["irrigationPump"] = False
         hmiDict["aerationPump"] = False
         iPadComms.sendJson(socket,hmiDict)
+        time.sleep(0.2)
 
         delayNow = datetime.datetime.now()
         delayNowMinutes = delayNow.hour *60 + delayNow.minute
@@ -314,4 +316,41 @@ def irrigation(serial, socket, maxed, maxedTank, nIrrigation, doseTime, doseWhen
             delayNowMinutes = delayNow.hour *60 + delayNow.minute
 
     return hmiDict
+
+def irrigationDemo(serial, socket, maxedTank,  hmiDict):                      # This function starts the irrigation routine
+    
+    dateNow = datetime.datetime.now()
+    minutesNow = dateNow.minute + dateNow.hour * 60
+    delayMins = minutesNow + 5
+
+    serial.write(b'2')
+    hmiDict["irrigationPump"] = True
+    hmiDict["aerationPump"] = True
+    iPadComms.sendJson(socket,hmiDict)
+    time.sleep(0.2)
+
+    while (delayNowMinutes < delayMins):
+
+        levels = arduinoComms.recieveSensorInfo(serial)                                 # Recieve the levels from the arduino                         
+        hmiDict["levels"][3] = str(round((abs(levels[3])/maxedTank)*100,2))+"%"         # Get the percentage of the main tank
+        iPadComms.sendJson(socket,hmiDict)                                              # Send the data
+        time.sleep(0.5)
+        if (((levels[3]/maxedTank)*100) <= 1):                                          # If main tank level is below x%, finish irrigation
+            serial.write(b'1')
+            hmiDict["irrigationPump"] = False
+            hmiDict["aerationPump"] = False
+            iPadComms.sendJson(socket,hmiDict)
+            time.sleep(0.2)
+            return hmiDict
+
+        delayNow = datetime.datetime.now()
+        delayNowMinutes = delayNow.hour *60 + delayNow.minute
+
+    serial.write(b'1')
+    hmiDict["irrigationPump"] = False
+    hmiDict["aerationPump"] = False
+    iPadComms.sendJson(socket,hmiDict)
+    time.sleep(0.2)
+    return hmiDict
+
 
