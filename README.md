@@ -8,5 +8,7 @@ Archive of all the programs used in a smart hydroponics project of mechatronics 
 3. findLayersToReplace: Supporting function to find learnable  layers on a neural netwokr for transfer learning.
 4. resnet101TransferLearning: Train a CNN with resnet101 architecture using transfer learning.
 5. raspiWebcamP2: This function loads the CNN and the camera module of the raspberry pi, takes a picture, classifies it and saves the results on a .txt file.
-6. deployCnnOnRpi: This function deploys the function raspiWebcam2 as a standalone executable on the raspberry pi.
+6. deployCnnOnRpi: This function deploys the function raspiWebcam2 or raspiStaticPicP2 as a standalone executable on the raspberry pi.
 7. experimentLime (wip): Applies the Lime analisys on different images using the trained network.
+8. raspiStaticPicP2: This function loads the CNN, classifies a static picture saved on the raspberry pi and saves the results on a .txt file.
+9. readResizedImg: Reads and resizes a static image to a specified input size.
