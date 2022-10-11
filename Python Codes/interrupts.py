@@ -4,23 +4,25 @@ import time
 
 state = 0
 
-def emergencyButtonInterrupt(socket, hmiDict, emerg):
+def emergencyButtonInterrupt(socket, hmiDict, emerg, lastState):
     
     global state
-    n = 500000
+    n = 800000
     readings = [0 for i in range(n)]
     for i in range (0,n):
         readings[i] = GPIO.input(emerg)
     
     if (most_frequent(readings) and (state == 0)):
         print("Interrupting")
-        hmiDict["emergency"] = True
+        hmiDict["status"] = "Parada de emergencia"
         iPadComms.sendJson(socket, hmiDict)
+        time.sleep(0.5)
         state = 1
     elif (most_frequent(readings) == 0) and (state == 1):  
         print("Resuming")
-        hmiDict["emergency"] = False
+        hmiDict["status"] = lastState
         iPadComms.sendJson(socket, hmiDict)
+        time.sleep(0.5)
         state = 0
         
     return

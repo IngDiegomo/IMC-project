@@ -1,5 +1,7 @@
+from time import time
 from tracemalloc import start
 import routines
+import demoRoutines
 import serial
 import socket
 import iPadComms
@@ -8,6 +10,7 @@ import datasetInteraction
 import fileInteractions
 import RPi.GPIO as GPIO
 import interrupts
+import time
 
 host = ""  # The server's hostname or IP address
 port = 65432  # The port used by the server
@@ -18,10 +21,7 @@ GPIO.setmode(GPIO.BCM)
 
 emergButton = 26                                            # Emergency button pin
 
-
 maxed = 3090                                                # Grams of a container full of water
-
-dosingDay = 20                                              # Initial dosing day
 
 photoStep = 5                                               # Days between each photo
 
@@ -29,15 +29,9 @@ photoDay = 5                                                # Days since last ph
 
 deficiencyDay = 40                                          # Day from which to start taking photos
 
-consToday = datasetInteraction.getTodayValues(dosingDay)    # Concentration values of starting day
+#gramsPerPlant = 5
 
-#gramsPerPlant = [(1000/dosingDay)*i for i in consToday]     # Grams per plant 
-
-#gramsPerPlant = [i if i > 1 else 1 for i in gramsPerPlant]  # If the grams are below 
-
-gramsPerPlant = 5
-
-
+lastState = "Normal"
 
 try:
     ser = serial.Serial("/dev/ttyACM0", 115200, timeout=3000)  # Initialize serial connection
@@ -59,7 +53,7 @@ else:
 
 checksScreenDict = {
     "gramsToPour": 0,
-    "checks": [0, 0, 0],
+    "checks": [False, False, False],
     "grams": [0.0, 0.0, 0.0],
     "success" : True,
     "pourDidFinish": False,
@@ -82,22 +76,48 @@ hmiScreenDict = {
     "emergency": False,
 }
 
+statusScreenDict = {
+    "levels":[0.0, 0.0, 0.0, 0.0],
+    "status": "normal",
+    "nextDose": "calculando..."
+}
 
 GPIO.setup(emergButton, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 GPIO.add_event_detect(emergButton, GPIO.BOTH,
-                      callback = lambda emergButton: interrupts.emergencyButtonInterrupt(conn, hmiScreenDict,emergButton),  
-                      bouncetime = 500)
+                      callback = lambda emergButton: interrupts.emergencyButtonInterrupt(conn, statusScreenDict,emergButton, lastState),  
+                      bouncetime = 800)
 
-dosageHour , nPlants, nIrrigation, doseWhenReady = iPadComms.getInitialParams(conn)
+dosageHour , nPlants, nIrrigation, doseWhenReady, dosingDay = iPadComms.getInitialParams(conn)
 
-dosageHour = datetime.time.fromisoformat(str(dosageHour))
-today = datetime.date.today()
-nextDosification = datetime.datetime.combine(today,dosageHour)
+
+#consToday = datasetInteraction.getTodayValues(dosingDay)    # Concentration values of starting day
+
+#maxCons = datasetInteraction.getTodayValues(175)
+
+#gramsPerPlant = [0, 0, 0]
+
+#for i in range(0,3):
+#    gramsPerPlant[i] = [consToday[i] * 390 / maxCons[i]]
+
+#gramsPerPlant = [i if i > 1 else 1 for i in gramsPerPlant]  # If the grams are below 
+
+if dosingDay>= 20 and dosingDay<=50:
+    checksScreenDict["gramsToPour"] = [5, 5, 5]  
+elif dosingDay>50 and dosingDay<= 80:
+    checksScreenDict["gramsToPour"] = [10, 10, 10]
+elif dosingDay>80 and dosingDay<= 120:
+    checksScreenDict["gramsToPour"] = [20, 20, 20]
+elif dosingDay>80 and dosingDay<= 120:
+    checksScreenDict["gramsToPour"] = [30, 30, 30] 
+elif dosingDay>120 and dosingDay<= 175:
+    checksScreenDict["gramsToPour"] = [100, 100, 100]
+else:
+    checksScreenDict["gramsToPour"] = [5, 5, 5]    
 
 
 #checksScreenDict["gramsToPour"] = [round(i*nPlants) for i in gramsPerPlant]
-checksScreenDict["gramsToPour"] = [gramsPerPlant*nPlants, gramsPerPlant*nPlants, gramsPerPlant*nPlants]     # Grams to pour fixed value
+#checksScreenDict["gramsToPour"] = [gramsPerPlant*nPlants, gramsPerPlant*nPlants, gramsPerPlant*nPlants]     # Grams to pour fixed value
 
 maxedTank = 5000                                                               # Max grams to fill the main tank
 tankLevel = 508*nPlants
@@ -106,10 +126,66 @@ tankLevel = 508*nPlants
 ser.write(b'0')
 
 checksScreenDict = routines.nutrientFilling(ser, checksScreenDict, conn)
-hmiScreenDict = routines.waterFilling(ser, conn, maxed, hmiScreenDict)
-hmiScreenDict = routines.mixing(ser, conn, hmiScreenDict)
-hmiScreenDict = routines.dosing(dosingDay, ser, conn, maxed, maxedTank, hmiScreenDict)
-hmiScreenDict = routines.irrigationDemo(ser,conn,maxedTank,hmiScreenDict)
+hmiScreenDict, statusScreenDict, lastState = routines.waterFilling(ser, conn, maxed, hmiScreenDict, statusScreenDict, lastState)
+hmiScreenDict, statusScreenDict, lastState = routines.mixing(ser, conn, hmiScreenDict, statusScreenDict, lastState)
+hmiScreenDict, statusScreenDict, lastState = routines.dosing(dosingDay, ser, conn, maxed, maxedTank, hmiScreenDict, statusScreenDict, lastState)
+hmiScreenDict, statusScreenDict, lastState = demoRoutines.irrigationDemo(ser,conn,maxedTank,hmiScreenDict, statusScreenDict, lastState)
+statusScreenDict, nextDosification = routines.calculateNextDosingTime(conn, statusScreenDict, dosageHour)
+
+demoDict = {
+    "result": "Planta sana",
+    "n": "x gramos",
+    "p": "x gramos",
+    "k": "x gramos"
+}
+
+while True:
+
+    demoDosingDay , getPicture, doseDemo, refillDemo, refillTank = iPadComms.getDemoParams(conn)
+
+    datasetInteraction.sendActualCurveCsv(conn, demoDosingDay)
+    datasetInteraction.sendNextCurveCsv(conn, demoDosingDay)
+
+    if doseDemo:
+
+        demoDict = demoRoutines.dosingDemo(demoDosingDay, ser, conn, demoDict)
+        hmiScreenDict, statusScreenDict, lastState = demoRoutines.irrigationDemo(ser,conn,maxedTank,hmiScreenDict, statusScreenDict, lastState)
+
+    elif getPicture:
+
+        iPadComms.getPic()
+        fileInteractions.classifyStaticPic()
+        deficiency, certainty = fileInteractions.checkClassificationResults()
+        
+        if deficiency == 0:
+            demoDict["result"] = "Planta sana"
+        elif deficiency == 1:
+            demoDict["result"] = "Deficiencia de Nitrogeno"
+        elif deficiency == 2:
+            demoDict["result"] = "Deficiencia de Fósforo"
+        elif deficiency == 3:
+            demoDict["result"] = "Deficiencia de Potasio"
+        
+        iPadComms.sendJson(conn, demoDict)
+        
+        if deficiency >= 1 and deficiency <= 3:
+            datasetInteraction.modifyCurve(deficiency, demoDosingDay, certainty)
+            datasetInteraction.sendActualCurveCsv()
+            datasetInteraction.sendNextCurveCsv()
+            
+    elif refillDemo:
+        demoRoutines.refillDemo(ser, refillTank, conn, demoDosingDay)
+        
+
+        
+
+
+
+
+
+
+
+
 
 
 

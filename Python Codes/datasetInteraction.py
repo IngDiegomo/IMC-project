@@ -2,6 +2,7 @@ from textwrap import indent
 import numpy as np
 import json
 import time
+import iPadComms
 
 def getTodayValues(day):
     """
@@ -21,7 +22,7 @@ def getTodayValues(day):
     dataset = np.genfromtxt('actual_dosing.csv', delimiter=',')
     return [dataset[day][1], dataset[day][2], dataset[day][3]]
 
-def modifyCurve(deficiency, day):
+def modifyCurve(deficiency, day, certainty):
     """
     Modify the concentration curve of a specified nutrient
     with a deficiency detected on a specified day.
@@ -38,44 +39,92 @@ def modifyCurve(deficiency, day):
     """   
     actualDataset = np.genfromtxt('actual_dosing.csv', delimiter=',' , encoding="utf8")
     nextDataset = np.genfromtxt('next_dosing.csv', delimiter=',' , encoding="utf8")
-    nextDataset[1:day, deficiency] = actualDataset[1:day, deficiency] * 1.15 
-    actualDataset[day:, deficiency] = actualDataset[day:, deficiency] *1.15
+    nextDataset[1:day, deficiency] = actualDataset[1:day, deficiency] * 1.15 * certainty
+    actualDataset[day:, deficiency] = actualDataset[day:, deficiency] *1.15 * certainty
 
     np.savetxt("actual_dosing.csv", actualDataset, delimiter=",")
     np.savetxt("next_dosing.csv", nextDataset, delimiter=",")       
 
-def sendActualCurveCsv():
+def sendActualCurveCsv(socket, day):
 
+    valuesToSend = 10
     dataset = np.genfromtxt('actual_dosing.csv', delimiter=',' , encoding="utf8")
 
     for j in range (1,4):
         dataDict = {
-            'points':[]
+            'points_'+str(j):[]
         }
 
-        for i in range (0,len(dataset[1:,0])):
+        for i in range (capped(day-valuesToSend),capped(day+valuesToSend)):
             point = {
-                'x': dataset[i+1,0],
-                'y': dataset[i+1,j]
+                'x': int(dataset[i,0]),
+                'y': round(dataset[i,j],3)
             }
-            dataDict['points'].append(point)
-            dataDict = json.dumps(dataDict)
-            time.sleep(0.5)
+            dataDict['points_'+str(j)].append(point)
+            
+       
+        iPadComms.sendJson(socket,dataDict)
+        time.sleep(1)
 
-def sendNextCurveCsv():
+def sendNextCurveCsv(socket, day):
 
+    valuesToSend = 10
     dataset = np.genfromtxt('next_dosing.csv', delimiter=',' , encoding="utf8")
 
     for j in range (1,4):
         dataDict = {
-            'points':[]
+            'points_'+str(j+3):[]
         }
 
-        for i in range (0,len(dataset[1:,0])):
+        for i in range (capped(day-valuesToSend),capped(day+valuesToSend)):
             point = {
-                'x': dataset[i+1,0],
-                'y': dataset[i+1,j]
+                'x': int(dataset[i,0]),
+                'y': round(dataset[i,j],3)
             }
-            dataDict['points'].append(point)
-            dataDict = json.dumps(dataDict)
-            time.sleep(0.5)
+            dataDict['points_'+str(j+3)].append(point)
+
+    
+        iPadComms.sendJson(socket,dataDict)
+        time.sleep(1)
+
+def capped(n):
+    if n <= 1:
+        return 1
+    elif n>175:
+        return 175
+    else:
+        return n
+
+"""
+dosingDay = 20
+
+consToday = getTodayValues(dosingDay)    # Concentration values of starting day
+print(consToday)
+maxCons = getTodayValues(175)
+
+gramsPerPlant = [0, 0, 0]
+
+for i in range(0,3):
+    gramsPerPlant[i] = round(consToday[i] * 390 / maxCons[i])
+
+print (gramsPerPlant)
+
+
+
+consT = [i/(3090*0.65) for i in gramsPerPlant]
+
+volumeToDoseN = ((consToday[0]*(1.27*(10^2)/2.5*(10^2)))/consT[0])
+volumeToDoseP = ((consToday[1]*(1.27*(10^2)/2.5*(10^2)))/consT[1])
+volumeToDoseK = ((consToday[2]*(1.27*(10^2)/2.5*(10^2)))/consT[2])
+volumeToDoseTank = (((-consT[2]*consT[0]*consT[1]+consT[2]*consT[0]*consToday[1]
+                       +consT[2]*consT[0]*consToday[1]+consT[0]*consT[1]
+                       *consToday[2])*(-1.27*(10^2)/2.5*(10^2)))
+                       /(consT[2]*consT[0]*consT[1]))
+
+
+print(volumeToDoseN)
+print(volumeToDoseP)
+print(volumeToDoseK)
+print(volumeToDoseTank)
+"""
+        

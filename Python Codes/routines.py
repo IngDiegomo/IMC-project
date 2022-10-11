@@ -11,8 +11,9 @@ def canBeFloat(num):                            # This function says if a string
     except ValueError:
         return False
 
-def nutrientFilling(serial,hmiDict,socket):
-
+def nutrientFilling(serial, hmiDict, socket):
+    
+    global lastState
     # nutrient filling sequence
     serial.write(b'1')                  # Tell arduino to start the nutrient filling sequence
 
@@ -50,7 +51,7 @@ def nutrientFilling(serial,hmiDict,socket):
     return hmiDict
 
 
-def waterFilling(serial, socket, maxed, hmiDict):           # Routine to fill the water of each nutrient tank
+def waterFilling(serial, socket, maxed, hmiDict, statusDict, lastState):           # Routine to fill the water of each nutrient tank
 
     # water filling sequence
     serial.write(b'1')                  # Tell arduino to start the water filling sequence
@@ -74,7 +75,8 @@ def waterFilling(serial, socket, maxed, hmiDict):           # Routine to fill th
 
         if canBeFloat(data):                                       # If the data can be converte to float
             data = float(data)                                  # Convert it to float
-            level = round((abs(data)/maxed)*100,2)              # Make it a percentage of the max filling value
+            level = round((abs(data)/maxed),2)              # Make it a percentage of the max filling value
+            statusDict["levels"][tank] = level
             hmiDict["levels"][tank]= str(level) + "%"           # Update the hmiDict, the key "levels" and the corresponding tank
             changed = 0                                         
             if (level >= 80):                                   # If the level is greater than 80%
@@ -87,6 +89,9 @@ def waterFilling(serial, socket, maxed, hmiDict):           # Routine to fill th
             tank= 0                                                     # The tank being filled is 0 (N tank)
             hmiDict["fillingValves"] = [True, False, False, False]             # The valve of the first tank is open
             hmiDict["fillingPump"]= True                                         # The filling pump is on
+            statusDict["status"] = "Llenando"
+            lastState = "Llenando"
+            changed = 1
 
         elif data == 'p\n':                                                 # If data is 'p\p'
             filled = [1, 0, 0]                                               # The first tank has been filled
@@ -106,13 +111,15 @@ def waterFilling(serial, socket, maxed, hmiDict):           # Routine to fill th
             filled = [1, 1, 1]
             hmiDict["fillingValves"] = [False, False, False, False]             # All valves are closed
             hmiDict["fillingPump"]= False                                       # The filling pump is off
+            statusDict["status"] = "Llenado terminado"
+            lastState = "Llenado terminado"
             tank = 3
             changed = 1
             level = 0
         
-        if (level >= lastLevel + 5) or (changed == 1):          # If the level read is greater or equal to the last level + 5 or if there is been a change
+        if (level >= lastLevel + 0.05) or (changed == 1):          # If the level read is greater or equal to the last level + 5 or if there is been a change
             lastLevel = level                                   # Update the last level
-            iPadComms.sendJson (socket, hmiDict)                # Send info to iPad
+            iPadComms.sendJson (socket, statusDict)                # Send info to iPad
             time.sleep(1)
     
     levels = arduinoComms.recieveSensorInfo(serial)             # Recieve the verification values of the tank levels
@@ -120,17 +127,17 @@ def waterFilling(serial, socket, maxed, hmiDict):           # Routine to fill th
     print("Lectura arduino, antes de agitar:")                  # This is for debugging
     print(levels)
     # Conver the levels into percentage and update the hmi dict
-    hmiDict["levels"][0:3] = [str(round((abs(i)/maxed)*100,2))+"%" for i in levels]     
+    statusDict["levels"][0:3] = [round((abs(i)/maxed),2) for i in levels]     
     
-    iPadComms.sendJson(socket,hmiDict)                                  # Send the data to the iPad
+    iPadComms.sendJson(socket,statusDict)                                  # Send the data to the iPad
     time.sleep(0.5)
 
-    return hmiDict
+    return hmiDict, statusDict, lastState
 
-def mixing(serial,socket,hmiDict):                          # Mixing routine
+def mixing(serial,socket,hmiDict, statusDict, lastState):                          # Mixing routine
 
     mixed = 0                                               # Variable to signify the end of mixing
-    lastMixingDict = hmiDict.copy()                         # Copy of the hmi dict
+    lastMixingDict = statusDict.copy()                         # Copy of the hmi dict
 
     while (mixed != 1):                                     # While the mixing is not finished
 
@@ -140,27 +147,39 @@ def mixing(serial,socket,hmiDict):                          # Mixing routine
         if ("1" in data) or ("0" in data):                  # If there is a 1 or a 0 in the data
             data = data.split(',')
             hmiDict["lids"] = [float(i) for i in data]      # Update the lids values
-    
+            if (any(hmiDict["lids"])):
+                statusDict["status"] = "Tapas abiertas"  
+                lastState = "Tapas abiertas"
+
         elif data == "m\n":                                 # If there is an m in the data
             hmiDict["motors"] = [True, True, True]          # Update the motors values
+            statusDict["status"] = "Agitando"
+            lastState = "Agitando"
 
         elif data == "d\n":                                 # If there is a d in the data
             hmiDict["motors"] = [False, False, False]       # The motors are turned off
-             
+
         elif data == "e\n":                                 # If there is an e in the data
             hmiDict["motors"] = [False, False, False]       # The motors are turned off
+            statusDict["status"] = "Agitacion terminada"
+            lastState = "Agitacion terminada"
             mixed = 1                                       # The mixing is done
-            iPadComms.sendJson(socket,hmiDict)              # Send 
+            iPadComms.sendJson(socket,statusDict)              # Send the data to the iPad
             time.sleep(0.5)
+
             break
         
         elif data == "i\n":                                 # If data is an i
             hmiDict["interrupted"] = True                   # The mixing was interrupted
-        
-        if lastMixingDict != hmiDict:                       # If there has been any changes to the dict
-            iPadComms.sendJson(socket,hmiDict)              # Send the data to the iPad
+            statusDict["status"] = "Agitacion interrumpida"
+            lastState = "Agitacion interrumpida"
+            iPadComms.sendJson(socket,statusDict)              # Send 
+            time.sleep(3)
+
+        if lastMixingDict != statusDict:                       # If there has been any changes to the dict
+            iPadComms.sendJson(socket,statusDict)              # Send the data to the iPad
             time.sleep(0.5)
-            lastMixingDict = hmiDict.copy()                 # Update the last dict
+            lastMixingDict = statusDict.copy()                 # Update the last dict
 
     data = serial.read_until()                              # Read the data for the tds values
     data = data.decode()
@@ -168,7 +187,7 @@ def mixing(serial,socket,hmiDict):                          # Mixing routine
 
     hmiDict["tds"] = [float(i) for i in data]               # Update the tds values
     
-    iPadComms.sendJson(socket,hmiDict)                      # Send the data to the iPad
+    iPadComms.sendJson(socket,statusDict)                      # Send the data to the iPad
     time.sleep(0.2)
 
     levels = arduinoComms.recieveSensorInfo(serial)         # Recieve the levels info
@@ -176,9 +195,9 @@ def mixing(serial,socket,hmiDict):                          # Mixing routine
     print("Lectura arduino, despues de agitar:")            
     print(levels)
 
-    return hmiDict
+    return hmiDict, statusDict, lastState
 
-def dosing(day, serial, socket, maxed, maxedTank, hmiDict):            # Dosing routine
+def dosing(day, serial, socket, maxed, maxedTank, hmiDict, statusDict, lastState):            # Dosing routine
 
     serial.write(b'1')
 
@@ -218,18 +237,23 @@ def dosing(day, serial, socket, maxed, maxedTank, hmiDict):            # Dosing 
             hmiDict['dosePumps'] =  [routineStep==0, routineStep==2, routineStep==4]     # Dose pumps values depend on the routine step
             hmiDict['fillingValves'][3] = routineStep == 6                                   # Filling valves and pump values depend on the routine step
             hmiDict['fillingPump'] = routineStep == 6
+            statusDict["status"] = "Dosificando"
+            lastState = "Dosificando"
             routineStep += 1
             changed = 1
 
         elif data == "d\n":     # If d recieved, dosing is done
             dosed = 1
+            statusDict["status"] = "Dosificacion terminada"
+            lastState = "Dosificacion terminada"
             changed = 1
         
         elif canBeFloat(data):                                       # If the data can be converte to float
             data = float(data)                                  # Convert it to float
             level = round((abs(data)/maxedTank)*100,2)              # Make it a percentage of the max filling value
             hmiDict["levels"][3]= str(level) + "%"           # Update the hmiDict, the key "levels" and the corresponding tank                                         
-            if level>lastLevel + 3:
+            statusDict["levels"][3]= level
+            if level>lastLevel + 0.03:
                 changed = 1
                 lastLevel = level
             if (level >= 80):                                   # If the level is greater than 80%
@@ -239,23 +263,25 @@ def dosing(day, serial, socket, maxed, maxedTank, hmiDict):            # Dosing 
                 hmiDict['warnings'][3] = True                   # Turn on warning
         
         if changed == 1:
-            iPadComms.sendJson(socket,hmiDict)       # Send the data to the iPad
+            iPadComms.sendJson(socket,statusDict)       # Send the data to the iPad
             time.sleep(0.5)
             changed = 0
     
     levels = arduinoComms.recieveSensorInfo(serial)                     # Recieve the levels from the arduino
 
-    levelsNutrientTanks = [str(round((abs(i)/maxed)*100,2))+"%" for i in levels]    # Get the percentages for the nutrient tanks
+    levelsNutrientTanks = [round((abs(i)/maxed),2) for i in levels]    # Get the percentages for the nutrient tanks
     levelsNutrientTanks.pop()
     hmiDict["levels"][0:3] = levelsNutrientTanks
+    statusDict["levels"][0:3] = levelsNutrientTanks
     
-    hmiDict["levels"][3] = str(round((abs(levels[3])/maxedTank)*100,2))+"%"         # Get the percentage of the main tank
+    hmiDict["levels"][3] = round((abs(levels[3])/maxedTank),2)         # Get the percentage of the main tank
+    statusDict["levels"][3] = round((abs(levels[3])/maxedTank),2)
 
     hmiDict['tds'] = arduinoComms.recieveSensorInfo(serial)                         # Get the tds level
 
-    iPadComms.sendJson(socket,hmiDict)
+    iPadComms.sendJson(socket,statusDict)
 
-    return hmiDict
+    return hmiDict, statusDict, lastState
 
 def irrigation(serial, socket, maxed, maxedTank, nIrrigation, doseTime, doseWhenReady, hmiDict):                      # This function starts the irrigation routine
 
@@ -317,40 +343,14 @@ def irrigation(serial, socket, maxed, maxedTank, nIrrigation, doseTime, doseWhen
 
     return hmiDict
 
-def irrigationDemo(serial, socket, maxedTank,  hmiDict):                      # This function starts the irrigation routine
-    
-    dateNow = datetime.datetime.now()
-    minutesNow = dateNow.minute + dateNow.hour * 60
-    delayMins = minutesNow + 5
 
-    serial.write(b'2')
-    hmiDict["irrigationPump"] = True
-    hmiDict["aerationPump"] = True
-    iPadComms.sendJson(socket,hmiDict)
-    time.sleep(0.2)
+def calculateNextDosingTime(socket, statusDict, dosageHour):
 
-    while (delayNowMinutes < delayMins):
+    dosageHour = datetime.time.fromisoformat(str(dosageHour))
+    today = datetime.date.today()
+    nextDosification = datetime.datetime.combine(today,dosageHour)
 
-        levels = arduinoComms.recieveSensorInfo(serial)                                 # Recieve the levels from the arduino                         
-        hmiDict["levels"][3] = str(round((abs(levels[3])/maxedTank)*100,2))+"%"         # Get the percentage of the main tank
-        iPadComms.sendJson(socket,hmiDict)                                              # Send the data
-        time.sleep(0.5)
-        if (((levels[3]/maxedTank)*100) <= 1):                                          # If main tank level is below x%, finish irrigation
-            serial.write(b'1')
-            hmiDict["irrigationPump"] = False
-            hmiDict["aerationPump"] = False
-            iPadComms.sendJson(socket,hmiDict)
-            time.sleep(0.2)
-            return hmiDict
-
-        delayNow = datetime.datetime.now()
-        delayNowMinutes = delayNow.hour *60 + delayNow.minute
-
-    serial.write(b'1')
-    hmiDict["irrigationPump"] = False
-    hmiDict["aerationPump"] = False
-    iPadComms.sendJson(socket,hmiDict)
-    time.sleep(0.2)
-    return hmiDict
-
+    statusDict["nextDose"] = str(nextDosification.hour) + " horas " + str(nextDosification.minute) + " minutos"
+    iPadComms.sendJson(socket,statusDict)
+    return statusDict, nextDosification
 

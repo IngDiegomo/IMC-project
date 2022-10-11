@@ -1,6 +1,7 @@
 from tracemalloc import start
 import routines
 import serial
+import demoRoutines
 import socket
 import iPadComms
 import datetime
@@ -45,46 +46,151 @@ else:
     conn, addr = s.accept()
     print(f"Connected by {addr}")
 
-dosageHour , nPlants, nIrrigation, doseWhenReady = iPadComms.getInitialParams(conn)
-
-dosageHour = datetime.time.fromisoformat(str(dosageHour))
-
-today = datetime.date.today()
-
-nextDosification = datetime.datetime.combine(today,dosageHour)
-#successDict = {
-#    "success" : True
-#}
-#iPadComms.sendJson(conn,successDict)
-
-gramsToPour = [round(i*nPlants) for i in gramsPerPlant]
-
-checksScreenDict = {
-    "gramsToPour": gramsToPour,
-    "checks": [False, False, False],
-    "grams": [0.0, 0.0, 0.0],
-    "success" : True,
-    "pourDidFinish": False,
-    "gramsDifference": [0.0, 0.0, 0.0]
+demoDict = {
+    "result": "Planta sana",
+    "n": "x gramos",
+    "p": "x gramos",
+    "k": "x gramos"
 }
 
-hmiScreenDict = {   
-    "levels": ["0%", "0%", "0%", "0%"],
-    "fillingValves": [0, 0, 0, 0],
-    "fillingPump": 0,
-    "warnings": [0, 0, 0, 0],
-    "criticals": [0, 0, 0, 0],
-    "lids": [0, 0, 0],
-    "motors": [0, 0, 0],
-    "tds": [0, 0, 0],
-    "dosePumps": [0, 0 ,0],
-    "interrupted": 0
-}
-print("aca")
-time.sleep(1)
-iPadComms.sendJson(conn,checksScreenDict)
-print("aqui")
-print(gramsToPour)
+
+x = int(input("day"))
+iPadComms.sendJson(conn,demoDict)
+time.sleep(0.5)
+
+
+
+while True:
+
+    datasetInteraction.sendActualCurveCsv(conn, x)
+    datasetInteraction.sendNextCurveCsv(conn, x)
+
+
+    demoDosingDay , getPicture, doseDemo, refillDemo, refillTank = iPadComms.getDemoParams(conn)
+    print(demoDosingDay)
+
+    if doseDemo:
+    
+        volumes = input("gramos: ")
+        volumes = volumes.split(',')
+        volumes = [float(i) for i in volumes]
+        print("Volumenes resultantes a dosificar, de las ecuaciones calculado por el arduino:") # This is for debugging
+        print(volumes)
+        demoDict["n"] = str(round(volumes[0],2)) + " gramos"
+        demoDict["p"] = str(round(volumes[1],2)) + " gramos"
+        demoDict["k"] = str(round(volumes[2],2)) + " gramos"
+        iPadComms.sendJson(conn,demoDict)
+        time.sleep(0.5)
+
+        dosed = 0                       # Indicates if the dosing is finished
+
+
+        while dosed == 0:                       # While dosing is not finished
+
+            data = input("Finish dosing: ")
+        
+            if data == "d":     # If d recieved, dosing is done
+                dosed = 1
+                
+    elif getPicture:
+
+        iPadComms.getPic(conn)
+        fileInteractions.classifyStaticPic()
+        deficiency, certainty = fileInteractions.checkClassificationResults()
+        
+        if deficiency == 0:
+            demoDict["result"] = "Planta sana"
+        elif deficiency == 1:
+            demoDict["result"] = "Deficiencia de Nitrogeno"
+        elif deficiency == 2:
+            demoDict["result"] = "Deficiencia de Fósforo"
+        elif deficiency == 3:
+            demoDict["result"] = "Deficiencia de Potasio"
+        
+        iPadComms.sendJson(conn, demoDict)
+        time.sleep(0.5)
+        
+        if deficiency >= 1 and deficiency <= 3:
+            datasetInteraction.modifyCurve(deficiency, demoDosingDay, certainty)
+            datasetInteraction.sendActualCurveCsv(conn, demoDosingDay)
+            datasetInteraction.sendNextCurveCsv(conn, demoDosingDay)
+            
+    elif refillDemo:
+
+        checkDemoDict = {
+            "grams_to_pour": 'Gramos a vertir',
+            "check": False,
+            "success": False
+            }
+        
+        iPadComms.sendJson(conn,checkDemoDict)
+        time.sleep(0.5)
+        actualWeights = input("4 pesos: ")
+        actualWeights = actualWeights.split(',')
+        actualWeights = [float(i) for i in actualWeights]
+
+        if actualWeights[refillTank] >= 1200:
+            checkDemoDict["grams_to_pour"] = 'Tanque lleno'
+            iPadComms.sendJson(conn,checkDemoDict)
+            time.sleep(0.5)
+        
+
+        else:
+            checkDemoDict["success"] = True
+            iPadComms.sendJson(conn,checkDemoDict)
+            time.sleep(0.5)
+
+            if demoDosingDay>= 20 and demoDosingDay<=50:
+                checkDemoDict["grams_to_pour"] = 'Eche 5 gramos'
+                gramsToPour = 5
+            elif demoDosingDay>50 and demoDosingDay<= 80:
+                checkDemoDict["grams_to_pour"] = 'Eche 10 gramos'
+                gramsToPour = 10
+            elif demoDosingDay>80 and demoDosingDay<= 120:
+                checkDemoDict["grams_to_pour"] = 'Eche 20 gramos'
+                gramsToPour = 20
+            elif demoDosingDay>80 and demoDosingDay<= 120:
+                checkDemoDict["grams_to_pour"] = 'Eche 40 gramos'
+                gramsToPour = 40
+            elif demoDosingDay>120 and demoDosingDay<= 175:
+                checkDemoDict["grams_to_pour"] = 'Eche 70 gramos'
+                gramsToPour = 70
+            else:
+                checkDemoDict["gramsToPour"] = 'Eche 5 gramos'
+                gramsToPour = 5
+
+            iPadComms.sendJson(conn,demoDict)
+            time.sleep(0.5)
+
+            limitValue = actualWeights[refillTank] + gramsToPour
+
+
+            while (checkDemoDict["check"] != True):                       # While all checks ar not done
+
+                iPadComms.getCheckSignal(conn)                        # Wait for ipad check signal
+                time.sleep(0.5)                     
+                scales = input("4 scales")    # Request the weightscale readings from arduino
+                scales = scales.split(',')
+                scales = [float(i) for i in scales]
+                if (scales[refillTank] >= limitValue):                         # If the scale value is greater or equal to than the grams to Pour
+                    checkDemoDict["check"] = True 
+                    checkDemoDict["gramsToPour"] = 'Listo, llenando...' 
+                    iPadComms.sendJson(conn, checkDemoDict)                                                 # Send them to HMI
+                    time.sleep(0.5)
+
+
+        
+
+
+
+
+
+
+#print("aca")
+#time.sleep(1)
+#iPadComms.sendJson(conn,checksScreenDict)
+#print("aqui")
+#print(gramsToPour)
 # show in hmi grams per tank
 #while (True):
 #    iPadComms.sendJson(conn,checksScreenDict)
@@ -93,6 +199,7 @@ print(gramsToPour)
 #        break
 
 # nutrient filling sequence
+"""
 while (checksScreenDict["checks"] != [True, True, True]):
 
     iPadComms.getCheckSignal(conn)
@@ -188,35 +295,5 @@ time.sleep(0.5)
 
 
 """
-hmiScreenDict = routines.waterFilling(ser,conn,maxed,hmiScreenDict)
-hmiScreenDict = routines.mixing(ser,conn, hmiScreenDict)
-
-#Skipping the first day dosing
-
-tempDate = datetime.datetime.now()
-currentTime = datetime.time(tempDate.hour, tempDate.minute, tempDate.second)
-if currentTime > dosageHour:
-    delta = datetime.timedelta(days=1, minutes= 0, seconds = 0)
-    nextDosification = nextDosification + delta
-    dosingDay += 1
 
 
-while(1):
-    dateNow = datetime.datetime.now()
-    if dateNow >= nextDosification:
-        routines.dosing(dosingDay,ser,conn,maxed)
-        dosingDay += 1
-        delta = datetime.timedelta(days=1, seconds = 0)
-        nextDosification = dateNow + delta
-        #routines.irrigation(ser,socket,maxed)
-        
-        if dosingDay > deficiencyDay and photoDay != photoStep:
-            photoDay += 1
-
-        if dosingDay >= deficiencyDay and photoDay == photoStep:
-            fileInteractions.takeAndClassifyPic()
-            # Revisar foto
-            deficiency = 0
-            datasetInteraction.modifyCurve(deficiency,dosingDay)
-            photoDay = 0
-"""
