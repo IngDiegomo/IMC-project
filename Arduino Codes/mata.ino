@@ -1,3 +1,4 @@
+
 #include "routines.h"
 #include "pinout.h"
 
@@ -16,7 +17,7 @@ float volumeN;
 float volumeP; 
 float volumeK; 
 int weigthValues = 20;
-
+char data = 20;
 
 void setup()
 {
@@ -59,11 +60,6 @@ void loop()
     //digitalWrite(FILLING_VALVE_TANK,HIGH);
     //Serial.println("Asd");
 
-    //digitalWrite(DOSE_PUMP_N, HIGH);
-    //digitalWrite(DOSE_PUMP_P, HIGH);
-    //digitalWrite(DOSE_PUMP_K, HIGH);
-
-
 
     
     routines::nutrientFilling();
@@ -73,9 +69,13 @@ void loop()
     while (true)
     {
         while(!Serial.available());
-        char data = Serial.read();
-        while(Serial.available()>0) Serial.read();
-
+        while ((data != '1') and
+               (data != '2') and
+               (data != '3') and
+               (data != '4'))
+                {
+                    data = Serial.read();
+                }
         switch (data) 
         {
             case '1':
@@ -90,138 +90,19 @@ void loop()
 
 
             case '3':
+                routines::refillATank();
+
                 break;
 
             case '4':
-                break;
-
-            case '5':
-
+                routines::weightVerification();
                 break;
 
             default:
+                Serial.flush();
 
-                break; 
         }
     
     }
-    
-
-    /* Con esto probe el sistema de seguridad y el agitado
-    if ((asd == 1)                   and
-        !digitalRead(LIMIT_SWITCH_N) and
-        !digitalRead(LIMIT_SWITCH_P) and
-        !digitalRead(LIMIT_SWITCH_K))
-
-    {  
-        Serial.println("Batiendo");
-        delay(500);
-        y = routines::tryToMix();
-        asd = 0;
-        Serial.print(y);
-        while(!Serial.available());
-        asd = Serial.parseInt();
-        while(Serial.available()>0) Serial.read();
-    
-    }
-
-    */
-
-    /*
-     // Con esto probamos la dosificacion
-    if (asd != 0){
-    Serial.println("Dosificando");
-    actualVolumeN = sensors::getNValuesFiltered(1, weigthValues);
-    actualVolumeP = sensors::getNValuesFiltered(2, weigthValues);
-    actualVolumeK = sensors::getNValuesFiltered(3, weigthValues);
-    actualVolumeTank = sensors::getNValuesFiltered(4, weigthValues);
-    
-    volumeN = actualVolumeN - volumeToDose + 5;
-    volumeP = actualVolumeP - volumeToDose + 5;
-    volumeK = actualVolumeK - volumeToDose + 5;
-
-    routines::doseToTankDebug(DOSE_PUMP_N,volumeN,scaleN);
-    routines::doseToTankDebug(DOSE_PUMP_P,volumeP,scaleP);
-    routines::doseToTankDebug(DOSE_PUMP_K,volumeK,scaleK);
-    
-
-    
-    float debugVolumeTank = sensors::getNValuesMedian(4, weigthValues);
-
-
-        while (true)
-        {
-            debugVolumeTank = sensors::getNValuesMedian(4, weigthValues);
-            if (debugVolumeTank > (actualVolumeTank + volumeToDose))
-            {
-                break;
-            }
-        }
-        digitalWrite(FILLING_VALVE_TANK,HIGH);
-        digitalWrite(FILLING_PUMP,HIGH);
-        Serial.print(digitalRead(FILLING_VALVE_TANK));
-        Serial.print('\n'); 
-        Serial.print(digitalRead(FILLING_PUMP));
-        Serial.print('\n'); 
-        while ((sensors::getScaleFiltered(4))<volumeToDoseDT)
-        {
-            Serial.println(sensors::getScaleFiltered(4));
-        }
-        digitalWrite(FILLING_PUMP,LOW);
-        digitalWrite(FILLING_VALVE_TANK,LOW);
-        Serial.print(digitalRead(FILLING_VALVE_TANK));
-        Serial.print('\n'); 
-        Serial.println(digitalRead(FILLING_PUMP));
-        
-        Serial.print('d');
-        Serial.print('\n');
-    
-    
-        
-    }
-    Serial.println("Dime");
-    while(!Serial.available());
-    asd = Serial.parseInt();
-    volumeToDose = asd;
-    while(Serial.available()>0) Serial.read();
-    */
-    
-
-    /* Con esto probe la rutina de llenado
-    if (asd == 1){
-        
-        
-        digitalWrite(FILLING_VALVE_K,HIGH);
-        digitalWrite(FILLING_VALVE_N,HIGH);
-        digitalWrite(FILLING_VALVE_P,HIGH);
-        digitalWrite(FILLING_VALVE_TANK,HIGH);
-        digitalWrite(FILLING_PUMP,HIGH);
-      
-
-        Serial.print("Filling");
-        routines::waterFilling();
-        
-    }
-    
-    while(!Serial.available());
-    asd = Serial.parseInt();
-    while(Serial.available()>0) Serial.read();
-    
-    if (asd == 2)
-    {
-        Serial.print("Apagando");
-        digitalWrite(FILLING_PUMP,LOW);
-        
-        digitalWrite(FILLING_VALVE_N,LOW);
-        digitalWrite(FILLING_VALVE_P,LOW);
-        digitalWrite(FILLING_VALVE_K,LOW);
-        digitalWrite(FILLING_VALVE_TANK,LOW);
-
-    }
-    
- */   
-   
-    
-    
 
 }

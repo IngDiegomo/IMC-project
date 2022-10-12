@@ -88,6 +88,7 @@ namespace sensors
     float getNValuesMedian(int scale, int n)
     {
         float median;                           // Value to store the median
+        float temp;
         switch (scale)                          // Switch the scale parameter (1, 2, 3, 4 is N, P, K, Tank)
         {
             case (1):
@@ -95,7 +96,7 @@ namespace sensors
                 for (int i = 0; i < n; i++)                         // For n values
                 {
                     median = filterN.AddValue(scaleN.get_units());  // Add the reading to the median filter array
-
+                    temp = getScaleFiltered(1);
                 }
                 return filterN.GetFiltered();                       // Return the resulting median
                 break;
@@ -105,6 +106,7 @@ namespace sensors
                 for (int i = 0; i < n; i++)                         // Same as above
                 {
                     median = filterP.AddValue(scaleP.get_units());
+                    temp = getScaleFiltered(2);
 
                 }
                 return filterP.GetFiltered();
@@ -115,6 +117,7 @@ namespace sensors
                 for (int i = 0; i < n; i++)                         // Same as above
                 {
                     median = filterK.AddValue(scaleK.get_units());
+                    temp = getScaleFiltered(3);
 
                 }
                 return filterK.GetFiltered();
@@ -125,13 +128,15 @@ namespace sensors
                 for (int i = 0; i < n; i++)                                 // Same as above
                 {
                     median = filterTank.AddValue(scaleTank.get_units());
+                    temp = getScaleFiltered(4);
 
                 }
                 return filterTank.GetFiltered();
                 break;
             
             default:
-                break;
+                Serial.flush();
+               
         }
     }
     
@@ -157,7 +162,7 @@ namespace sensors
                 break;
     
             default:
-                break;
+            Serial.flush();
         }
     }
     float getScaleFiltered(int scale)
@@ -223,7 +228,8 @@ namespace sensors
                 break;
 
             default:
-                break;
+                Serial.flush();
+            
         }
 
 
@@ -270,7 +276,8 @@ namespace sensors
                 break;
             
             default:
-                break;
+                Serial.flush();
+           
         }
 
     }

@@ -5,7 +5,7 @@
 #define TANKS_FILL_VALUE 3090*0.30
 #define MIXING_TIME_MS 20000
 #define MOTOR_DELAY_MS 1000
-#define PREFILL_DELAY_MS 3000
+#define PREFILL_DELAY_MS 2000
 #define VOLUME_PER_PLANT 0.508
 #define GRAMS_PER_PLANT 5 
 
@@ -27,6 +27,7 @@ namespace routines
     void irrigation();
     void doseToTankDebug(uint8_t pump, float volume, HX711 &scale);
     bool mixingInterrupted();
+    void refillATank();
 
 }
 

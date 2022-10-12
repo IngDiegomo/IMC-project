@@ -58,7 +58,7 @@ namespace communications
                 break;
             
             default:
-                break;
+                Serial.flush();
 
         }
 
