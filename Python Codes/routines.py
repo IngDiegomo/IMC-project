@@ -76,6 +76,7 @@ def waterFilling(serial, socket, maxed, hmiDict, statusDict):           # Routin
 
         if canBeFloat(data):                                       # If the data can be converte to float
             data = float(data)                                  # Convert it to float
+            print(data)
             level = round((abs(data)/maxed),2)              # Make it a percentage of the max filling value
             statusDict["levels"][tank] = level
             hmiDict["levels"][tank]= str(level) + "%"           # Update the hmiDict, the key "levels" and the corresponding tank
@@ -282,6 +283,7 @@ def dosing(day, serial, socket, maxed, maxedTank, hmiDict, statusDict, nPlants):
 
     hmiDict['tds'] = arduinoComms.recieveSensorInfo(serial)                         # Get the tds level
     print(hmiDict['tds'])
+
     iPadComms.sendJson(socket,statusDict)
 
     return hmiDict, statusDict

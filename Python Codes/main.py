@@ -158,13 +158,13 @@ while True:
         deficiency, certainty = fileInteractions.checkClassificationResults()
         
         if deficiency == 0:
-            demoDict["result"] = "Planta sana " + str(round(certainty,3))
+            demoDict["result"] = "Planta sana " + str(round(certainty,2)) 
         elif deficiency == 1:
-            demoDict["result"] = "Deficiencia de Nitrogeno " + str(round(certainty,3))
+            demoDict["result"] = "Deficiencia de Nitrogeno " + str(round(certainty,2))
         elif deficiency == 2:
-            demoDict["result"] = "Deficiencia de Fósforo " + str(round(certainty,3))
+            demoDict["result"] = "Deficiencia de Fósforo " + str(round(certainty,2))
         elif deficiency == 3:
-            demoDict["result"] = "Deficiencia de Potasio " + str(round(certainty,3))
+            demoDict["result"] = "Deficiencia de Potasio " + str(round(certainty,2))
         
         iPadComms.sendJson(conn, demoDict)
         time.sleep(0.5)

@@ -198,7 +198,6 @@ def irrigationDemo(serial, socket, maxedTank,  hmiDict, statusDict):            
     data = serial.read_until()          # Recieve data from arduino
     data = data.decode()
     print(data)
-    
     return hmiDict, statusDict
 
 def refillDemo(serial, tank, socket, dosingDay):
@@ -212,7 +211,6 @@ def refillDemo(serial, tank, socket, dosingDay):
     serial.write(b'4')
     time.sleep(0.5)
     actualWeights = arduinoComms.recieveSensorInfo(serial)
-    print(actualWeights)
 
     if actualWeights[tank] >= 1200:
         checkDemoDict["grams_to_pour"] = "Tanque lleno"
@@ -227,7 +225,7 @@ def refillDemo(serial, tank, socket, dosingDay):
 
         serial.write(b'3')
         time.sleep(0.5)
-        msg = str(tank + 1) 
+        msg = str(tank + 1) + 'x'
         serial.write(msg.encode())
         time.sleep(0.5)
 
