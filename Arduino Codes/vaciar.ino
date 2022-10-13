@@ -1,4 +1,4 @@
-
+/*
 #include "routines.h"
 #include "pinout.h"
 
@@ -89,3 +89,4 @@ void loop()
     while(Serial.available()>0) Serial.read();
 
 }
+*/

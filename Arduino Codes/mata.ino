@@ -1,4 +1,4 @@
-/*
+
 #include "routines.h"
 #include "pinout.h"
 
@@ -112,4 +112,3 @@ void loop()
     }
 
 }
-*/

@@ -168,70 +168,28 @@ namespace sensors
     float getScaleFiltered(int scale)
     {
         static float filteredN, filteredP, filteredK, filteredTank; // Satic values for each weight scale
-        float beforeVal;
         float valueRead;
         switch (scale)      // (1, 2, 3, 4 is N, P, K, Tank)
         {
             case (1):       
-                valueRead = scaleN.get_units();     // Read the weightscale
-                if ((valueRead > (filteredN + FILTER_VALUE)) or valueRead < (filteredN - FILTER_VALUE) )   // If the value read is above or below the last value read +- certain threshold
-                {
-                    
-                    return filteredN;   // Return the last value read
-                }
-                else
-                {
-                    filteredN = valueRead;  // Else, update the last value read with this reading and return it
-                    return filteredN;
-                } 
-                
-                break;
+                valueRead = updateDataN(scaleN.get_units());     // Read the weightscale
+                return valueRead;
 
             case (2):   // Same as above
-                valueRead = scaleP.get_units(); 
-                if ((valueRead > (filteredP + FILTER_VALUE)) or valueRead < (filteredP - FILTER_VALUE) )
-                {
-                    return filteredP;
-                }
-                else
-                {
-                    filteredP = valueRead;
-                    return filteredP;
-                } 
-                
-                break;
+                valueRead = updateDataP(scaleP.get_units()); 
+                return valueRead;
 
             case (3):   // Same as above
-                valueRead = scaleK.get_units(); 
-                if ((valueRead > (filteredK + FILTER_VALUE)) or valueRead < (filteredK - FILTER_VALUE) )
-                {
-                    return filteredK;
-                }
-                else
-                {
-                    filteredK = valueRead;
-                    return filteredK;
-                } 
-                
+                valueRead = updateDataK(scaleK.get_units());
+                return valueRead; 
                 break;
 
             case (4):   // Same as above but with different threshold 
-                valueRead = scaleTank.get_units(); 
-                if ((valueRead > (filteredTank + FILTER_VALUE_TANK)) or valueRead < (filteredTank - FILTER_VALUE_TANK) )
-                {
-                    return filteredTank;
-                }
-                else
-                {
-                    filteredTank = valueRead;
-                    return filteredTank;
-                } 
-                
-                break;
+                valueRead = updateDataTank(scaleTank.get_units()); 
+                return valueRead;
 
             default:
-                Serial.flush();
-            
+                Serial.flush();      
         }
 
 
@@ -283,4 +241,125 @@ namespace sensors
         }
 
     }
+
+    float updateDataN(float newX)
+    {
+        static float lastReadedVal=0;
+        static float x[5] = {0};
+        static float y[5] = {0};
+        float b[5] = {0.12866723, 0.12866723, 0, 0, 0};  //M
+        float a[5] = {1, -0.74266554, 0, 0, 0}; //N
+        float nextY;
+
+        if(newX >0)
+        {
+            nextY = (b[0]*newX + b[1]*x[4] + b[2]*x[3] + b[3]*x[2]+ b[4]*x[1] - a[1]*y[4] - a[2]*y[3] - a[3]*y[2] - a[4]*y[1]);
+            // left shift
+            for (int i = 0; i < 4; i++)
+            {
+                x[i] = x[i + 1];
+                y[i] = y[i + 1];
+            }
+            // agregar valores nuevos
+            x[4] = newX;
+            y[4] = nextY;
+            lastReadedVal = nextY;
+            return nextY;
+        }
+        else
+        {
+            return lastReadedVal;
+        }
+  }
+
+      float updateDataP(float newX)
+    {
+        static float lastReadedVal=0;
+        static float x[5] = {0};
+        static float y[5] = {0};
+        float b[5] = {0.12866723, 0.12866723, 0, 0, 0};  //M
+        float a[5] = {1, -0.74266554, 0, 0, 0}; //N
+        float nextY;
+
+        if(newX >0)
+        {
+            nextY = (b[0]*newX + b[1]*x[4] + b[2]*x[3] + b[3]*x[2]+ b[4]*x[1] - a[1]*y[4] - a[2]*y[3] - a[3]*y[2] - a[4]*y[1]);
+            // left shift
+            for (int i = 0; i < 4; i++)
+            {
+                x[i] = x[i + 1];
+                y[i] = y[i + 1];
+            }
+            // agregar valores nuevos
+            x[4] = newX;
+            y[4] = nextY;
+            lastReadedVal = nextY;
+            return nextY;
+        }
+        else
+        {
+            return lastReadedVal;
+        }
+    }
+
+      float updateDataK(float newX)
+    {
+        static float lastReadedVal=0;
+        static float x[5] = {0};
+        static float y[5] = {0};
+        float b[5] = {0.12866723, 0.12866723, 0, 0, 0};  //M
+        float a[5] = {1, -0.74266554, 0, 0, 0}; //N
+        float nextY;
+
+        if(newX >0)
+        {
+            nextY = (b[0]*newX + b[1]*x[4] + b[2]*x[3] + b[3]*x[2]+ b[4]*x[1] - a[1]*y[4] - a[2]*y[3] - a[3]*y[2] - a[4]*y[1]);
+            // left shift
+            for (int i = 0; i < 4; i++)
+            {
+                x[i] = x[i + 1];
+                y[i] = y[i + 1];
+            }
+            // agregar valores nuevos
+            x[4] = newX;
+            y[4] = nextY;
+            lastReadedVal = nextY;
+            return nextY;
+        }
+        else
+        {
+            return lastReadedVal;
+        }
+    }
+
+      float updateDataTank(float newX)
+    {
+        static float lastReadedVal=0;
+        static float x[5] = {0};
+        static float y[5] = {0};
+        float b[5] = {0.12866723, 0.12866723, 0, 0, 0};  //M
+        float a[5] = {1, -0.74266554, 0, 0, 0}; //N
+        float nextY;
+
+        if(newX >0)
+        {
+            nextY = (b[0]*newX + b[1]*x[4] + b[2]*x[3] + b[3]*x[2]+ b[4]*x[1] - a[1]*y[4] - a[2]*y[3] - a[3]*y[2] - a[4]*y[1]);
+            // left shift
+            for (int i = 0; i < 4; i++)
+            {
+                x[i] = x[i + 1];
+                y[i] = y[i + 1];
+            }
+            // agregar valores nuevos
+            x[4] = newX;
+            y[4] = nextY;
+            lastReadedVal = nextY;
+            return nextY;
+        }
+        else
+        {
+            return lastReadedVal;
+        }
+    }
+
 }

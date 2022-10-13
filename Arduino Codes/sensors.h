@@ -41,7 +41,10 @@ namespace sensors
     float getScaleMedian(int n);               // Gets the median filtered value of a scale (1, 2, 3, 4 is N, P, K, Tank)
     float getScaleFiltered(int scale);         // Gets the filtered last value of a scale (1, 2, 3, 4 is N, P, K, Tank)
     float getNValuesFiltered(int scale, int n); // Gets the mean of N values of last filtered value of a scale (1, 2, 3, 4 is N, P, K, Tank)
-    
+    float updateDataN(float newX);
+    float updateDataP(float newX);
+    float updateDataK(float newX);
+    float updateDataTank(float newX);
 
 
 }
