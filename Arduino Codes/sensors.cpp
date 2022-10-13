@@ -244,14 +244,16 @@ namespace sensors
 
     float updateDataN(float newX)
     {
+        const int treshold = 60;
         static float lastReadedVal=0;
         static float x[5] = {0};
         static float y[5] = {0};
+        float temp;
         float b[5] = {0.12866723, 0.12866723, 0, 0, 0};  //M
         float a[5] = {1, -0.74266554, 0, 0, 0}; //N
         float nextY;
 
-        if(newX >0)
+        if(newX >0 or abs((newX-lastReadedVal))<treshold)
         {
             nextY = (b[0]*newX + b[1]*x[4] + b[2]*x[3] + b[3]*x[2]+ b[4]*x[1] - a[1]*y[4] - a[2]*y[3] - a[3]*y[2] - a[4]*y[1]);
             // left shift
@@ -268,12 +270,15 @@ namespace sensors
         }
         else
         {
+            temp = lastReadedVal;
+            
             return lastReadedVal;
         }
-  }
+    }
 
       float updateDataP(float newX)
     {
+        const int treshold = 60;
         static float lastReadedVal=0;
         static float x[5] = {0};
         static float y[5] = {0};
@@ -281,7 +286,7 @@ namespace sensors
         float a[5] = {1, -0.74266554, 0, 0, 0}; //N
         float nextY;
 
-        if(newX >0)
+        if(newX >0 or abs((newX-lastReadedVal))<treshold)
         {
             nextY = (b[0]*newX + b[1]*x[4] + b[2]*x[3] + b[3]*x[2]+ b[4]*x[1] - a[1]*y[4] - a[2]*y[3] - a[3]*y[2] - a[4]*y[1]);
             // left shift
@@ -304,6 +309,7 @@ namespace sensors
 
       float updateDataK(float newX)
     {
+        const int treshold = 60;
         static float lastReadedVal=0;
         static float x[5] = {0};
         static float y[5] = {0};
@@ -311,7 +317,7 @@ namespace sensors
         float a[5] = {1, -0.74266554, 0, 0, 0}; //N
         float nextY;
 
-        if(newX >0)
+        if(newX >0 or abs((newX-lastReadedVal))<treshold)
         {
             nextY = (b[0]*newX + b[1]*x[4] + b[2]*x[3] + b[3]*x[2]+ b[4]*x[1] - a[1]*y[4] - a[2]*y[3] - a[3]*y[2] - a[4]*y[1]);
             // left shift
@@ -334,6 +340,7 @@ namespace sensors
 
       float updateDataTank(float newX)
     {
+        const int treshold = 60;
         static float lastReadedVal=0;
         static float x[5] = {0};
         static float y[5] = {0};
@@ -341,7 +348,7 @@ namespace sensors
         float a[5] = {1, -0.74266554, 0, 0, 0}; //N
         float nextY;
 
-        if(newX >0)
+        if(newX >0 or abs((newX-lastReadedVal))<treshold)
         {
             nextY = (b[0]*newX + b[1]*x[4] + b[2]*x[3] + b[3]*x[2]+ b[4]*x[1] - a[1]*y[4] - a[2]*y[3] - a[3]*y[2] - a[4]*y[1]);
             // left shift

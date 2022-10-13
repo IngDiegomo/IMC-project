@@ -1,16 +1,17 @@
 #include "routines.h"
 
-int next;
+
 
 float nutrientWeightN, nutrientWeightP, nutrientWeightK;
 float waterLitersN, waterLitersP, waterLitersK;
 float tankLevelN, tankLevelP, tankLevelK, tankLevelTank;
 float tdsMixedN, tdsMixedP, tdsMixedK;
 float weigthVerificationNValues = 20;
+float conN, conP, conK;                                                 // Actual concentrations on the nutrient tanks
 
 float nOvershoot = 5;
-float pOvershoot = 5;
-float kOvershoot = 5;
+float pOvershoot = 10;
+float kOvershoot = 15;
 
 int gramsPerPlant = 5;
 
@@ -40,8 +41,10 @@ namespace routines
 
     void nutrientFilling()
     {
+        int next;
         char startNutrientFilling;              // Variable to signal the start of nutrient filling routine
         
+        next = 0;
         while(!Serial.available());
         while (startNutrientFilling != '1') startNutrientFilling = Serial.read();   // Loop until the variable is 1
         while(Serial.available() > 0) Serial.read();
@@ -59,19 +62,26 @@ namespace routines
             case '1':                                   
                 communications::sendSensorInfo(2);
                 Serial.flush();
+                data = 0;
+                next = 0;
                 break;
             
             case '2':
                 weightVerification();
                 Serial.flush();
+                data = 0;
+                next = 0;
                 break;
             
             case '3':                   // End of routine value
                 next = 1;
+                data = 0;
                 break;
     
             default:
                 Serial.flush(); 
+                data = 0;
+                next = 0;
 
             }
         }
@@ -81,7 +91,7 @@ namespace routines
 
     void fillTankWater(int scale, uint8_t valve)        // Routine to fill a tank with water
     {
-        float weight = 0;                               // Variable to keep track of the weight of the tank
+       float weight = 0;                               // Variable to keep track of the weight of the tank
        float wN, wP, wK, wT;
        
         weight = sensors::getScaleFiltered(scale);
@@ -150,12 +160,29 @@ namespace routines
         waterLitersN = (tankLevelN - nutrientWeightN)/1000;         // Calculate the liters of water in the tank
         waterLitersP = (tankLevelP - nutrientWeightP)/1000;
         waterLitersK = (tankLevelK - nutrientWeightK)/1000;
+
+
         
         /*
         waterLitersN = (tankLevelN - gramsPerPlant)/1000;                     // Calculate the liters of water in the tank
         waterLitersP = (tankLevelP - gramsPerPlant)/1000;
         waterLitersK = (tankLevelK - gramsPerPlant)/1000;
         */
+
+        
+         // Calculate the nutrient concentration value in each tank, dependant on the nutrients poured
+        conN = nutrientWeightN/waterLitersN;
+        conP = nutrientWeightP/waterLitersP;
+        conK = nutrientWeightK/waterLitersK;
+        
+
+        // Calculate the nutrient concentration value with a fixed value for grams per plant
+        /*
+        conN = gramsPerPlant/waterLitersN;
+        conP = gramsPerPlant/waterLitersP;
+        conK = gramsPerPlant/waterLitersK;
+        */
+
         float tanksLevel[3] = {tankLevelN, tankLevelP, tankLevelK};
         for (int i = 0; i <3; i++)
         {
@@ -384,7 +411,6 @@ namespace routines
         float conTankN, conTankP, conTankK;     // Concentration values that the main tank must have
         float actualVolumeN, actualVolumeP, actualVolumeK, actualVolumeTank;    // Actual volume of the tanks
         float volumeToDoseN, volumeToDoseP, volumeToDoseK, volumeToDoseTank;    // Volumes to dose to the tanks
-        float conN, conP, conK;                                                 // Actual concentrations on the nutrient tanks
         float volumeN, volumeP, volumeK,volumeTank;                             // Volumes of the tanks after dosing
         float debugTLN, debugTLP, debugTLK;     // This is for debugging
         float nPlants;
@@ -429,19 +455,6 @@ namespace routines
         }
         Serial.print('\n');                         // Send a line break to signalize end of message
         Serial.flush();
-
-         // Calculate the nutrient concentration value in each tank, dependant on the nutrients poured
-        conN = nutrientWeightN/waterLitersN;
-        conP = nutrientWeightP/waterLitersP;
-        conK = nutrientWeightK/waterLitersK;
-        
-
-        // Calculate the nutrient concentration value with a fixed value for grams per plant
-        /*
-        conN = gramsPerPlant/waterLitersN;
-        conP = gramsPerPlant/waterLitersP;
-        conK = gramsPerPlant/waterLitersK;
-        */
 
         // This is for debugging
         float debugConsPote[3] = {conN, conP, conK};
@@ -570,30 +583,80 @@ namespace routines
 
     void refillATank()
     {
-        int tankToRefill;              // Variable to signal the start of nutrient filling routine
-        
+        char tankToRefill;              // Variable to signal the start of nutrient filling routine
+        float refillReading = 0;
+        char data;
+        int next;
+
         while(!Serial.available());
-        while (tankToRefill == 0) tankToRefill = Serial.parseInt();   // Loop until the variable is 1
+        while (tankToRefill == 0) tankToRefill = Serial.read();   // Loop until the variable is different of 0
         while(Serial.available() > 0) Serial.read();
 
         Serial.print('1');          // Send acknowledgement
         Serial.flush();
+        data = 0;
+        next = 0;
+        while(next == 0)            // Loop broken by a value recieved from the raspberry pi
+        {
+            while(!Serial.available());
+            while (data == 0) data = Serial.read();                // Recieved value
+            while(Serial.available()>0) Serial.read();
+            switch (data)                               // Send a different sensor reading depending on the value recieved
+            {
+            case '1':                                   
+                communications::sendSensorInfo(2);
+                Serial.flush();
+                data = 0;
+                next = 0;
+                break;
+            
+            case '2':
+                refillReading = 0;
+                if (tankToRefill == '1')
+                {
+                    refillReading= sensors::getNValuesMedian(1, weigthVerificationNValues); // Get n value median of scale 1 (K scale)
+                    Serial.println(refillReading); 
+                }
+                else if (tankToRefill == '2')
+                {
+                    refillReading= sensors::getNValuesMedian(2, weigthVerificationNValues); // Get n value median of scale 1 (K scale)
+                    Serial.println(refillReading); 
+                }
+                else if (tankToRefill == '3')
+                {
+                    refillReading= sensors::getNValuesMedian(3, weigthVerificationNValues); // Get n value median of scale 1 (K scale)
+                    Serial.println(refillReading); 
 
-        nutrientFilling();
+                }
+                data = 0;
+                Serial.flush();
+                next = 0;
+                break;
+            
+            case '3':                   // End of routine value
+                data = 0;
+                next = 1;
+                break;
+    
+            default:
+                Serial.flush(); 
+
+            }
+        }
+     
+
         switch(tankToRefill)
         {
-            case 1:                                   
-                fillTankWater(tankToRefill,FILLING_VALVE_N);
+            case '1':                                   
+                fillTankWater(1,FILLING_VALVE_N);
                 break;
-            case 2:                                   
-                fillTankWater(tankToRefill,FILLING_VALVE_P);
+            case '2':                                   
+                fillTankWater(2,FILLING_VALVE_P);
                 break;
-            case 3:                                   
-                fillTankWater(tankToRefill,FILLING_VALVE_K);
+            case '3':                                   
+                fillTankWater(3,FILLING_VALVE_K);
                 break;
-            case 4:                                   
-                fillTankWater(tankToRefill,FILLING_VALVE_TANK);
-                break;
+
             default:
                 Serial.flush();
 
@@ -604,6 +667,122 @@ namespace routines
 
 
 
+    }
+
+    void dosingDemo()                               // Dosing routine
+    {
+        float conTankN, conTankP, conTankK;     // Concentration values that the main tank must have
+        float actualVolumeN, actualVolumeP, actualVolumeK, actualVolumeTank;    // Actual volume of the tanks
+        float volumeToDoseN, volumeToDoseP, volumeToDoseK, volumeToDoseTank;    // Volumes to dose to the tanks
+        float volumeN, volumeP, volumeK,volumeTank;                             // Volumes of the tanks after dosing
+        float debugTLN, debugTLP, debugTLK;     // This is for debugging
+        float nPlants;
+
+        actualVolumeN = sensors::getNValuesMedian(1, weigthVerificationNValues);    // Get the values of the tank volumes
+        actualVolumeP = sensors::getNValuesMedian(2, weigthVerificationNValues);
+        actualVolumeK = sensors::getNValuesMedian(3, weigthVerificationNValues);
+        actualVolumeTank = sensors::getNValuesMedian(4, weigthVerificationNValues);
+
+        //Value dependant on the nutrients poured
+        
+        waterLitersN = (actualVolumeN - nutrientWeightN)/1000;                 // Water liters in the tanks
+        waterLitersP = (actualVolumeP - nutrientWeightP)/1000;
+        waterLitersK = (actualVolumeK - nutrientWeightK)/1000;
+        
+        // Value fixed
+        /*
+        waterLitersN = (actualVolumeN - gramsPerPlant)/1000;                 // Water liters in the tanks
+        waterLitersP = (actualVolumeP - gramsPerPlant)/1000;
+        waterLitersK = (actualVolumeK - gramsPerPlant)/1000;
+        */
+
+        // This is for debugging
+        float debugTanksLevel[3] = {waterLitersN, waterLitersP, waterLitersK}; 
+        for (int i = 0; i <3; i++)
+        {
+            Serial.print(debugTanksLevel[i],2);
+            if (i < 2) Serial.print(',');           // Send them as a comma separated series of data
+        }
+        Serial.print('\n');                         // Send a line break to signalize end of message
+        Serial.flush();
+
+        conTankN = Serial.parseFloat();             // Recieve the concentration values for each nutrient tank
+        conTankP = Serial.parseFloat();
+        conTankK = Serial.parseFloat(); 
+        nPlants  = Serial.parseFloat();
+
+        float debugCons[4] = {conTankN, conTankP, conTankK, nPlants};    // This is for debugging
+        for (int i = 0; i <4; i++)
+        {
+            Serial.print(debugCons[i],2);
+            if (i < 3) Serial.print(',');           // Send them as a comma separated series of data
+        }
+        Serial.print('\n');                         // Send a line break to signalize end of message
+        Serial.flush();
+
+        // This is for debugging
+        float debugConsPote[3] = {conN, conP, conK};
+        for (int i = 0; i <3; i++)
+        {
+            Serial.print(debugConsPote[i],4);
+            if (i < 2) Serial.print(',');           // Send them as a comma separated series of data
+        }
+        Serial.print('\n');                         // Send a line break to signalize end of message
+        Serial.flush();
+
+        // Calculate the volumes to dose in each tank, this is measured in grams of water
+        volumeToDoseN = ((conTankN*nPlants*(1.27E+2/2.5E+2))/conN)*1000;
+        volumeToDoseP = ((conTankP*nPlants*(1.27E+2/2.5E+2))/conP)*1000;
+        volumeToDoseK = ((conTankK*nPlants*(1.27E+2/2.5E+2))/conK)*1000;
+        volumeToDoseTank = ((nPlants*(-conK*conN*conP+conK*conN*conTankP
+                       +conK*conP*conTankN+conN*conP
+                       *conTankK)*(-1.27E+2/2.5E+2))
+                       /(conK*conN*conP))*1000;
+
+        // Calculate the volume each tank has to have after dosing, considering an overshoot
+        volumeN = actualVolumeN - volumeToDoseN + nOvershoot;
+        volumeP = actualVolumeP - volumeToDoseP + pOvershoot;
+        volumeK = actualVolumeK - volumeToDoseK + kOvershoot;
+        volumeTank = actualVolumeTank + volumeToDoseN + volumeToDoseP + volumeToDoseK + volumeToDoseTank;
+
+        // This is for debugging
+        float debugVolumes[4] = {volumeToDoseN, volumeToDoseP, volumeToDoseK, volumeTank};
+        for (int i = 0; i <4; i++)
+        {
+            Serial.print(debugVolumes[i],2);
+            if (i < 3) Serial.print(',');           // Send them as a comma separated series of data
+        }
+        Serial.print('\n');                         // Send a line break to signalize end of message
+        Serial.flush();
+
+        // Dose to each tank
+        doseToTank(DOSE_PUMP_N,volumeN,1);
+        doseToTank(DOSE_PUMP_P,volumeP,2);
+        doseToTank(DOSE_PUMP_K,volumeK,3);
+
+        Serial.print('d');
+        Serial.print('\n');
+        Serial.flush();
+    
+
+        tankLevelN = sensors::getNValuesMedian(1, weigthVerificationNValues);
+        tankLevelP = sensors::getNValuesMedian(2, weigthVerificationNValues);
+        tankLevelK = sensors::getNValuesMedian(3, weigthVerificationNValues);
+        tankLevelTank = sensors::getNValuesMedian(4, weigthVerificationNValues);
+
+        float tanksLevel[4] = {tankLevelN, tankLevelP, tankLevelK, tankLevelTank};
+        for (int i = 0; i <4; i++)
+        {
+            Serial.print(tanksLevel[i],2);
+            if (i < 3) Serial.print(',');           // Send them as a comma separated series of data
+        }
+        Serial.print('\n');
+        Serial.flush();
+
+        communications::sendSensorInfo(1);
+        Serial.flush();
+    
+        return;
     }
 
 }

@@ -72,7 +72,8 @@ void loop()
         while ((data != '1') and
                (data != '2') and
                (data != '3') and
-               (data != '4'))
+               (data != '4') and
+               (data != '5') )
                 {
                     data = Serial.read();
                 }
@@ -99,10 +100,27 @@ void loop()
                 break;
 
             case '4':
-                routines::weightVerification();
+
+                float refillReadings[3];
+                refillReadings[0] = sensors::getNValuesMedian(1, weigthValues); // Get n value median of scale 1 (N scale)
+                refillReadings[1] = sensors::getNValuesMedian(2, weigthValues); // Get n value median of scale 2 (P scale)
+                refillReadings[2] = sensors::getNValuesMedian(3, weigthValues); // Get n value median of scale 1 (K scale)
+
+                for (int i = 0; i <3; i++)                  // Loop for sending the weights to the raspberry pi
+                {
+                    Serial.print(refillReadings[i]);     
+                    if (i < 2) Serial.print(',');          // Send them as a comma separated series of data
+                }
+                Serial.print('\n');                        // Send a line break to signalize end of message
+    
                 data = 0;
                 break;
 
+            case '5':
+                routines::dosingDemo();
+                Serial.flush();
+                data = 0;
+            
             default:
                 data = 0;
                 Serial.flush();
