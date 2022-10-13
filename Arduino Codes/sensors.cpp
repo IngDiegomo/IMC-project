@@ -168,6 +168,7 @@ namespace sensors
     float getScaleFiltered(int scale)
     {
         static float filteredN, filteredP, filteredK, filteredTank; // Satic values for each weight scale
+        float beforeVal;
         float valueRead;
         switch (scale)      // (1, 2, 3, 4 is N, P, K, Tank)
         {
@@ -175,6 +176,7 @@ namespace sensors
                 valueRead = scaleN.get_units();     // Read the weightscale
                 if ((valueRead > (filteredN + FILTER_VALUE)) or valueRead < (filteredN - FILTER_VALUE) )   // If the value read is above or below the last value read +- certain threshold
                 {
+                    
                     return filteredN;   // Return the last value read
                 }
                 else

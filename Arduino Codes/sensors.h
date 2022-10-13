@@ -22,7 +22,7 @@
 
 // Filter values
 #define FILTER_VALUE 120
-#define FILTER_VALUE_TANK 80
+#define FILTER_VALUE_TANK 120
 
 
 // Scales and tds sensors declarations
@@ -41,7 +41,7 @@ namespace sensors
     float getScaleMedian(int n);               // Gets the median filtered value of a scale (1, 2, 3, 4 is N, P, K, Tank)
     float getScaleFiltered(int scale);         // Gets the filtered last value of a scale (1, 2, 3, 4 is N, P, K, Tank)
     float getNValuesFiltered(int scale, int n); // Gets the mean of N values of last filtered value of a scale (1, 2, 3, 4 is N, P, K, Tank)
-
+    
 
 
 }

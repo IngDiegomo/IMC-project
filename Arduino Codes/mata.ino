@@ -1,4 +1,4 @@
-
+/*
 #include "routines.h"
 #include "pinout.h"
 
@@ -53,7 +53,7 @@ void loop()
     //Serial.println(tiempomedir2-tiempomedir1);
 
     // Con esto reviso el comportamiento de las 4 básculas simultaneamente
-    //communications::sendSensorInfo('3');
+    //communications::sendSensorInfo(3);
     //Serial.print(scaleK.get_units());
     //Serial.print('\n'); 
 
@@ -80,25 +80,31 @@ void loop()
         {
             case '1':
                 routines::dosing();
-                
+                Serial.flush();
+                data = 0;
                 break;
 
                 
             case '2':
                 routines::irrigation();
+                Serial.flush();
+                data = 0;
                 break;
 
 
             case '3':
                 routines::refillATank();
-
+                Serial.flush();
+                data = 0;
                 break;
 
             case '4':
                 routines::weightVerification();
+                data = 0;
                 break;
 
             default:
+                data = 0;
                 Serial.flush();
 
         }
@@ -106,3 +112,4 @@ void loop()
     }
 
 }
+*/

@@ -57,7 +57,7 @@ namespace routines
             switch (data)                               // Send a different sensor reading depending on the value recieved
             {
             case '1':                                   
-                communications::sendSensorInfo('2');
+                communications::sendSensorInfo(2);
                 Serial.flush();
                 break;
             
@@ -185,7 +185,7 @@ namespace routines
         digitalWrite(DOSE_PUMP_N,LOW);
         digitalWrite(DOSE_PUMP_P,LOW);
         digitalWrite(DOSE_PUMP_K,LOW);
-        
+         wT = sensors::getScaleFiltered(4);
 
 
 
@@ -212,7 +212,8 @@ namespace routines
     {   
         unsigned long mixTime, motorsTime;          // Variables for time
         int interrupted, mixed;                     // Variables to indicate if the mixing is done or interrupted
-    
+        float wT;
+        wT = sensors::getScaleFiltered(4);
         Serial.print('m');                          // Indicate that the mixing is going to start
         Serial.print('\n');
         Serial.flush();
@@ -300,13 +301,13 @@ namespace routines
             do 
             {
                 delay(200);
-                communications::sendSensorInfo('2');    // Send the lids states
+                communications::sendSensorInfo(2);    // Send the lids states
                 Serial.flush();
             }
             while (mixingInterrupted());                // While mixing is interrupted
 
             delay(200);
-            communications::sendSensorInfo('2');        // Send the lids states
+            communications::sendSensorInfo(2);        // Send the lids states
             Serial.flush();
     
             if (tryToMix())                             // Try to mix
@@ -314,7 +315,7 @@ namespace routines
                 Serial.print('e');                      // If mixing successful, send e
                 Serial.print('\n');
                 Serial.flush();
-                communications::sendSensorInfo('1');    // Send the tds values
+                communications::sendSensorInfo(1);    // Send the tds values
                 Serial.flush();
                 break; 
             }
@@ -526,7 +527,7 @@ namespace routines
         Serial.print('\n');
         Serial.flush();
 
-        communications::sendSensorInfo('1');
+        communications::sendSensorInfo(1);
         Serial.flush();
     
         return;
@@ -544,8 +545,8 @@ namespace routines
         Serial.print('1');          // Send acknowledgement
         Serial.flush();
 
-
-        char data;
+        char data = 0;
+        float temp;
         digitalWrite(IRRIGATION_PUMP,HIGH);
         digitalWrite(AIR_PUMP,HIGH);
         unsigned long dataSendTime;
@@ -556,13 +557,14 @@ namespace routines
             if (millis() >= dataSendTime)
             {
                 dataSendTime += 5000;
-                communications::sendSensorInfo('3');
+                Serial.println(sensors::getScaleFiltered(4));
+                temp = sensors::getScaleMedian(4);
             }
             if (Serial.available()) data = Serial.read();
         }
         digitalWrite(IRRIGATION_PUMP,LOW);
         digitalWrite(AIR_PUMP,LOW);
-
+        Serial.println('x');
         return;
     }
 
