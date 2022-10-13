@@ -51,7 +51,13 @@ def getContinueSignal (socket):
 
 def getDemoParams (socket):
 
+    demoDosingDay = 20
+    doseDemo = False
+    refillDemo = False
+    getPicture = False
+    refillTank = 0
     demoData = 0
+    
     while demoData == 0:
         demoData = socket.recv(1024)
         print(demoData)

@@ -20,7 +20,7 @@ def getTodayValues(day):
         [N, P, K] values of concentration.          
     """    
     dataset = np.genfromtxt('actual_dosing.csv', delimiter=',')
-    return [dataset[day][1], dataset[day][2], dataset[day][3]]
+    return [round(dataset[day][1],4), round(dataset[day][2],4), round(dataset[day][3],4)]
 
 def modifyCurve(deficiency, day, certainty):
     """

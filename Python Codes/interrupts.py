@@ -3,11 +3,13 @@ import RPi.GPIO as GPIO
 import time
 
 state = 0
+lastState = 'Normal'
 
-def emergencyButtonInterrupt(socket, hmiDict, emerg, lastState):
+def emergencyButtonInterrupt(socket, hmiDict, emerg):
     
     global state
-    n = 800000
+
+    n = 1000000
     readings = [0 for i in range(n)]
     for i in range (0,n):
         readings[i] = GPIO.input(emerg)

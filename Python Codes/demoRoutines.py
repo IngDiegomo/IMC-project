@@ -3,6 +3,15 @@ import arduinoComms
 import datetime
 import time
 import datasetInteraction
+import interrupts
+
+def canBeFloat(num):                            # This function says if a string can be turned into a float
+    try:
+        float(num)
+        return True
+    except ValueError:
+        return False
+
 
 def demoNutrientFilling(serial, tank, socket, dosingDay):
 
@@ -69,7 +78,7 @@ def demoNutrientFilling(serial, tank, socket, dosingDay):
     return 
 
 
-def dosingDemo(day, serial, socket, demoDict):            # Demo dosing routine
+def dosingDemo(day, serial, socket, demoDict, nPlants):            # Demo dosing routine
 
     serial.write(b'1')
 
@@ -78,12 +87,13 @@ def dosingDemo(day, serial, socket, demoDict):            # Demo dosing routine
     print(levels)
     
     conValues = datasetInteraction.getTodayValues(day)          
-    print("Concentraciones del dataset que la raspi mando:")                        # This is for debugging
+    print("Concentraciones del dataset y nPlants que la raspi mando:")                        # This is for debugging
+    conValues.append(nPlants)
     print(conValues)
     arduinoComms.sendArrayData(serial,conValues)
 
     cons = arduinoComms.recieveSensorInfo(serial)
-    print("Concentraciones del dataset que el arduino recibio:")                    # This is for debugging
+    print("Concentraciones del dataset y nPlants que el arduino recibio:")                    # This is for debugging
     print(cons)
 
     conPotes = arduinoComms.recieveSensorInfo(serial)
@@ -93,10 +103,11 @@ def dosingDemo(day, serial, socket, demoDict):            # Demo dosing routine
     volumes = arduinoComms.recieveSensorInfo(serial)
     print("Volumenes resultantes a dosificar, de las ecuaciones calculado por el arduino:") # This is for debugging
     print(volumes)
-    demoDict["n"] = str(round(volumes[0]),2) + " gramos"
-    demoDict["p"] = str(round(volumes[1]),2) + " gramos"
-    demoDict["k"] = str(round(volumes[2]),2) + " gramos"
+    demoDict["n"] = str(round(volumes[0],2)) + " gramos"
+    demoDict["p"] = str(round(volumes[1],2)) + " gramos"
+    demoDict["k"] = str(round(volumes[2],2)) + " gramos"
     iPadComms.sendJson(socket,demoDict)
+
     time.sleep(0.5)
 
     dosed = 0                       # Indicates if the dosing is finished
@@ -114,56 +125,81 @@ def dosingDemo(day, serial, socket, demoDict):            # Demo dosing routine
             dosed = 1
             pass
         
+        elif canBeFloat(data):                                       # If the data can be converte to float
+            data = float(data)                                  # Convert it to float
+            print(data)
     
     levels = arduinoComms.recieveSensorInfo(serial)                     # Recieve the levels from the arduino
-
+    print(levels)
     tds = arduinoComms.recieveSensorInfo(serial)                         # Get the tds level
-
+    print(tds)
     return demoDict
 
-def irrigationDemo(serial, socket, maxedTank,  hmiDict, statusDict, lastState):                      # This function starts the irrigation routine
+def irrigationDemo(serial, socket, maxedTank,  hmiDict, statusDict):                      # This function starts the irrigation routine
     
 
     dateNow = datetime.datetime.now()
-    secondsNow = (dateNow.minute + dateNow.hour * 60)*60
+    secondsNow = (dateNow.minute + dateNow.hour * 60) *60 + dateNow.second
+    
     delaySecs = secondsNow + 45
+    print(delaySecs)
 
     serial.write(b'2')
+    print('escribi un 2')
+    time.sleep(0.2)
+    serial.write(b'1')                  # Tell arduino to start the nutrient filling sequence
+
+    while True:
+        ack = serial.read()            # Acknowledgement from arduino
+        print(ack)
+        if ack == b'1':
+            print("Empezando irrigacion")
+            break
+    
     hmiDict["irrigationPump"] = True
     hmiDict["aerationPump"] = True
     statusDict["status"] = "Irrigando"
-    lastState = "Irrigando"
+    interrupts.lastState = "Irrigando"
     iPadComms.sendJson(socket,statusDict)
     time.sleep(0.2)
 
     while (secondsNow < delaySecs):
-
-        levels = arduinoComms.recieveSensorInfo(serial)                                 # Recieve the levels from the arduino                         
-        hmiDict["levels"][3] = round((abs(levels[3])/maxedTank),2)         # Get the percentage of the main tank
-        statusDict["levels"][3] = round((abs(levels[3])/maxedTank),2) 
+        print(secondsNow<delaySecs)
+        print(secondsNow)
+        print(delaySecs)
+        data = serial.read_until()          # Recieve data from arduino
+        data = data.decode()
+        print(data)
+        data = float(data)
+        statusDict["levels"][3] = round((abs(data)/maxedTank),2) 
         iPadComms.sendJson(socket,statusDict)                                              # Send the data
         time.sleep(0.5)
-        if (((levels[3]/maxedTank)*100) <= 1):                                          # If main tank level is below x%, finish irrigation
+        if (((data/maxedTank)*100) <= 1):                                          # If main tank level is below x%, finish irrigation
             serial.write(b'1')
             hmiDict["irrigationPump"] = False
             hmiDict["aerationPump"] = False
             statusDict["status"] = "Irrigacion terminada"
-            lastState = "Irrigacion terminada"
+            interrupts.lastState = "Irrigacion terminada"
             iPadComms.sendJson(socket,statusDict)
             time.sleep(0.2)
             return hmiDict, statusDict
 
-        delayNow = datetime.datetime.now()
-        secondsNow = (delayNow.hour *60 + delayNow.minute)*60
+        dateNow = datetime.datetime.now()
+        secondsNow = (dateNow.hour *60 + dateNow.minute)*60 + dateNow.second
 
+    print('sali')
     serial.write(b'1')
     hmiDict["irrigationPump"] = False
     hmiDict["aerationPump"] = False
     statusDict["status"] = "Irrigacion terminada"
-    lastState = "Irrigacion terminada"
+    interrupts.lastState = "Irrigacion terminada"
     iPadComms.sendJson(socket,statusDict)
     time.sleep(0.2)
-    return hmiDict, statusDict, lastState
+    data = serial.read_until()          # Recieve data from arduino
+    data = data.decode()
+    print(data)
+    
+    return hmiDict, statusDict
 
 def refillDemo(serial, tank, socket, dosingDay):
 
@@ -176,6 +212,7 @@ def refillDemo(serial, tank, socket, dosingDay):
     serial.write(b'4')
     time.sleep(0.5)
     actualWeights = arduinoComms.recieveSensorInfo(serial)
+    print(actualWeights)
 
     if actualWeights[tank] >= 1200:
         checkDemoDict["grams_to_pour"] = "Tanque lleno"
@@ -190,7 +227,7 @@ def refillDemo(serial, tank, socket, dosingDay):
 
         serial.write(b'3')
         time.sleep(0.5)
-        msg = str(tank + 1) + 'x'
+        msg = str(tank + 1) 
         serial.write(msg.encode())
         time.sleep(0.5)
 
