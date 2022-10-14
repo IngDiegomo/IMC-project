@@ -34,7 +34,7 @@ def nutrientFilling(serial, hmiDict, socket):
         time.sleep(0.5)                     
         scales = arduinoComms.requestSensorInfo(serial,b'2')    # Request the weightscale readings from arduino
         hmiDict["grams"] = scales
-
+        print(scales)
         for i in range(0,len(hmiDict["checks"])):                                            # Loop all scales
             if ((scales[i] >= hmiDict["gramsToPour"][i] ) and (hmiDict["checks"][i] == 0)):  # If the scale value is greater or equal to than the grams to Pour
                 hmiDict["checks"][i] = True 
@@ -268,7 +268,7 @@ def dosing(day, serial, socket, maxed, maxedTank, hmiDict, statusDict, nPlants):
         
         if changed == 1:
             iPadComms.sendJson(socket,statusDict)       # Send the data to the iPad
-            time.sleep(0.5)
+            time.sleep(0.8)
             changed = 0
     
     levels = arduinoComms.recieveSensorInfo(serial)                     # Recieve the levels from the arduino
@@ -283,7 +283,6 @@ def dosing(day, serial, socket, maxed, maxedTank, hmiDict, statusDict, nPlants):
 
     hmiDict['tds'] = arduinoComms.recieveSensorInfo(serial)                         # Get the tds level
     print(hmiDict['tds'])
-
     iPadComms.sendJson(socket,statusDict)
 
     return hmiDict, statusDict

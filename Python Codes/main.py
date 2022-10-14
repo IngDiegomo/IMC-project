@@ -141,6 +141,7 @@ iPadComms.getCheckSignal(conn)
 datasetInteraction.sendActualCurveCsv(conn, dosingDay)
 datasetInteraction.sendNextCurveCsv(conn, dosingDay)
 iPadComms.sendJson(conn, demoDict)
+print('mande la curva')
 time.sleep(0.5)
 
 while True:
@@ -148,9 +149,9 @@ while True:
     demoDosingDay , getPicture, doseDemo, refillDemo, refillTank = iPadComms.getDemoParams(conn)
 
     if doseDemo:
-
+        print('dosing')
         demoDict = demoRoutines.dosingDemo(demoDosingDay, ser, conn, demoDict, nPlants)
-
+        print('dosed')
     elif getPicture:
 
         iPadComms.getPic(conn)
@@ -158,13 +159,13 @@ while True:
         deficiency, certainty = fileInteractions.checkClassificationResults()
         
         if deficiency == 0:
-            demoDict["result"] = "Planta sana " + str(round(certainty,2)) 
+            demoDict["result"] = "Planta sana " + str(round(certainty,3))
         elif deficiency == 1:
-            demoDict["result"] = "Deficiencia de Nitrogeno " + str(round(certainty,2))
+            demoDict["result"] = "Deficiencia de Nitrogeno " + str(round(certainty,3))
         elif deficiency == 2:
-            demoDict["result"] = "Deficiencia de Fósforo " + str(round(certainty,2))
+            demoDict["result"] = "Deficiencia de Fósforo " + str(round(certainty,3))
         elif deficiency == 3:
-            demoDict["result"] = "Deficiencia de Potasio " + str(round(certainty,2))
+            demoDict["result"] = "Deficiencia de Potasio " + str(round(certainty,3))
         
         iPadComms.sendJson(conn, demoDict)
         time.sleep(0.5)
@@ -175,7 +176,7 @@ while True:
             datasetInteraction.sendNextCurveCsv(conn, demoDosingDay)
             
     elif refillDemo:
-        demoRoutines.refillDemo(ser, refillTank, conn, demoDosingDay)
+        #demoRoutines.refillDemo(ser, refillTank, conn, demoDosingDay)
         
 
         

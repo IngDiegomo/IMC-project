@@ -12,8 +12,6 @@ import arduinoComms
 import datetime
 import time
 import datasetInteraction
-import shutil
-import json
 
 host = ""  # The server's hostname or IP address
 port = 65432  # The port used by the server
@@ -37,19 +35,19 @@ x = int(input("day"))
 datasetInteraction.sendActualCurveCsv(conn, x)
 datasetInteraction.sendNextCurveCsv(conn, x)
 
+file = open("imagen.jpg", "wb")
+imageChunk = conn.recv(1024)
 
-while(True):
-    iPadComms.getPic(conn)
-    fileInteractions.classifyStaticPic()
-    deficiency, certainty = fileInteractions.checkClassificationResults()
-        
-    if deficiency == 0:
-        print("Planta sana " + str(round(certainty,2))) 
-    elif deficiency == 1:
-        print("Deficiencia de Nitrogeno " + str(round(certainty,2)))
-    elif deficiency == 2:
-        print("Deficiencia de Fósforo " + str(round(certainty,2)))
-    elif deficiency == 3:
-        print("Deficiencia de Potasio " + str(round(certainty,2)))
-        
-        
+print(len(imageChunk))
+print(imageChunk[-1])
+
+while imageChunk[-1] != 217:
+    
+    file.write(imageChunk)
+
+    imageChunk = conn.recv(1024)
+    print(len(imageChunk))
+    print(imageChunk[-1])
+
+print('done')
+file.close()

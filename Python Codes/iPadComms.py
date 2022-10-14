@@ -63,7 +63,7 @@ def getDemoParams (socket):
         print(demoData)
     demoDataJson = json.loads(demoData.decode())
     if "get_picture" in demoDataJson:
-        demoDosingDay = 20
+        demoDosingDay = demoDataJson["day"]
         doseDemo = False
         refillDemo = False
         getPicture = True

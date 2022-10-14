@@ -13,7 +13,7 @@ def canBeFloat(num):                            # This function says if a string
         return False
 
 
-def demoNutrientFilling(serial, tank, socket, dosingDay):
+def demoNutrientFilling(serial, tank, socket, dosingDay, initialValue):
 
     demoDict = {
         "grams_to_pour": "Calculando gramos",
@@ -40,31 +40,33 @@ def demoNutrientFilling(serial, tank, socket, dosingDay):
         demoDict["grams_to_pour"] = 'Eche 5 gramos'
         gramsToPour = 5  
 
+    print(gramsToPour)
+ 
+    limitValue = initialValue + gramsToPour
     
-    # nutrient filling sequence
-    serial.write(b'1')                  # Tell arduino to start the nutrient filling sequence
-
-    while True:
-        ack = serial.read()            # Acknowledgement from arduino
-        if ack == b'1':
-            print(ack)
-            break
-
-    initialValues = arduinoComms.requestSensorInfo(serial,b'2')
-    limitValue = initialValues[tank] + gramsToPour
-
-    
+    print(limitValue)
     # show in hmi grams per tank
     iPadComms.sendJson(socket,demoDict)
     time.sleep(0.5)
 
-
     while (demoDict["check"] != True):                       # While all checks ar not done
 
         iPadComms.getCheckSignal(socket)                        # Wait for ipad check signal
+        print('chequeando')
         time.sleep(0.5)                     
-        scales = arduinoComms.requestSensorInfo(serial,b'2')    # Request the weightscale readings from arduino
-        if (scales[tank] >= limitValue):                         # If the scale value is greater or equal to than the grams to Pour
+        serial.write(b'2')
+        while True:
+            ack = serial.read()            # Acknowledgement from arduino
+            print(ack)
+            if ack.decode() == b'n':
+                print(ack)
+                break
+
+        #data = serial.read_until()          # Recieve data from arduino
+        #data = data.decode()
+        #scale = float(data)
+        print(scale)
+        if (scale >= limitValue):                         # If the scale value is greater or equal to than the grams to Pour
                 demoDict["check"] = True 
                 demoDict["gramsToPour"] = 'Listo, llenando...' 
                     
@@ -80,7 +82,7 @@ def demoNutrientFilling(serial, tank, socket, dosingDay):
 
 def dosingDemo(day, serial, socket, demoDict, nPlants):            # Demo dosing routine
 
-    serial.write(b'1')
+    serial.write(b'5')
 
     levels = arduinoComms.recieveSensorInfo(serial)                                 # This is for debugging
     print("Litros leidos por el arduino (menos los 5 gramos de los nutrientes):")
@@ -160,8 +162,9 @@ def irrigationDemo(serial, socket, maxedTank,  hmiDict, statusDict):            
     hmiDict["aerationPump"] = True
     statusDict["status"] = "Irrigando"
     interrupts.lastState = "Irrigando"
+    time.sleep(0.5)
     iPadComms.sendJson(socket,statusDict)
-    time.sleep(0.2)
+    time.sleep(0.5)
 
     while (secondsNow < delaySecs):
         print(secondsNow<delaySecs)
@@ -178,10 +181,14 @@ def irrigationDemo(serial, socket, maxedTank,  hmiDict, statusDict):            
             serial.write(b'1')
             hmiDict["irrigationPump"] = False
             hmiDict["aerationPump"] = False
-            statusDict["status"] = "Irrigacion terminada"
-            interrupts.lastState = "Irrigacion terminada"
+            statusDict["status"] = "Irrigacion interrumpida, cisterna vacia"
+            interrupts.lastState = "Irrigacion interrumpida, cisterna vacia"
             iPadComms.sendJson(socket,statusDict)
-            time.sleep(0.2)
+            time.sleep(0.5)
+            data = serial.read_until()          # Recieve data from arduino
+            data = data.decode()
+            print(data)
+            print('Acabe')
             return hmiDict, statusDict
 
         dateNow = datetime.datetime.now()
@@ -194,14 +201,16 @@ def irrigationDemo(serial, socket, maxedTank,  hmiDict, statusDict):            
     statusDict["status"] = "Irrigacion terminada"
     interrupts.lastState = "Irrigacion terminada"
     iPadComms.sendJson(socket,statusDict)
-    time.sleep(0.2)
+    time.sleep(0.4)
     data = serial.read_until()          # Recieve data from arduino
     data = data.decode()
     print(data)
+    print('Acabe')
     return hmiDict, statusDict
 
 def refillDemo(serial, tank, socket, dosingDay):
 
+    print(tank)
     checkDemoDict = {
         "grams_to_pour": "Gramos a vertir",
         "check": False,
@@ -211,6 +220,7 @@ def refillDemo(serial, tank, socket, dosingDay):
     serial.write(b'4')
     time.sleep(0.5)
     actualWeights = arduinoComms.recieveSensorInfo(serial)
+    print(actualWeights)
 
     if actualWeights[tank] >= 1200:
         checkDemoDict["grams_to_pour"] = "Tanque lleno"
@@ -224,24 +234,34 @@ def refillDemo(serial, tank, socket, dosingDay):
         time.sleep(0.5)
 
         serial.write(b'3')
-        time.sleep(0.5)
-        msg = str(tank + 1) + 'x'
-        serial.write(msg.encode())
-        time.sleep(0.5)
-
+        time.sleep(1)
+        if tank == 0:
+            serial.write(b'1')
+            msg = b'1'
+        if tank == 1:
+            serial.write(b'2')
+            msg = b'2'
+        if tank == 2:
+            serial.write(b'3')
+            msg = b'3'
+            
+        print("Mande el tanque: ")
+        print(tank + 1)
         while True:
             ack = serial.read()            # Acknowledgement from arduino
-            if ack == b'1':
+            print(ack)
+            print(ack.decode())
+            if ack == msg:
                 print(ack)
                 break
 
-        demoNutrientFilling(serial, tank, socket, dosingDay)
+        demoNutrientFilling(serial, tank, socket, dosingDay,actualWeights[tank])
 
         while True:
             data = serial.read_until()                          # Read the arduino data
             data = data.decode()
             if data == "e\n":
-                print(ack)
+                print(data)
                 break
         
         checkDemoDict["grams_to_pour"] = "Refill listo"
