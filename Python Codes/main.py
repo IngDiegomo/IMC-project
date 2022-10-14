@@ -175,11 +175,8 @@ while True:
             datasetInteraction.sendActualCurveCsv(conn, demoDosingDay)
             datasetInteraction.sendNextCurveCsv(conn, demoDosingDay)
             
-    elif refillDemo:
-        #demoRoutines.refillDemo(ser, refillTank, conn, demoDosingDay)
-        
 
-        
+                
 
 
 

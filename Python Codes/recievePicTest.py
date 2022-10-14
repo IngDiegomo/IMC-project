@@ -34,20 +34,23 @@ x = int(input("day"))
 
 datasetInteraction.sendActualCurveCsv(conn, x)
 datasetInteraction.sendNextCurveCsv(conn, x)
+demoDict = {
+    "result":"Ninguna foto recibida"
+    }
 
-file = open("imagen.jpg", "wb")
-imageChunk = conn.recv(1024)
-
-print(len(imageChunk))
-print(imageChunk[-1])
-
-while imageChunk[-1] != 217:
+while True:
     
-    file.write(imageChunk)
-
-    imageChunk = conn.recv(1024)
-    print(len(imageChunk))
-    print(imageChunk[-1])
-
-print('done')
-file.close()
+    iPadComms.getPic(conn)
+    fileInteractions.classifyStaticPic()
+    deficiency, certainty = fileInteractions.checkClassificationResults()
+    if deficiency == 0:
+        demoDict["result"] = "Planta sana " + str(round(certainty,3))
+    elif deficiency == 1:
+        demoDict["result"] = "Deficiencia de Nitrogeno " + str(round(certainty,3))
+    elif deficiency == 2:
+        demoDict["result"] = "Deficiencia de Fósforo " + str(round(certainty,3))
+    elif deficiency == 3:
+        demoDict["result"] = "Deficiencia de Potasio " + str(round(certainty,3))
+        
+    iPadComms.sendJson(conn, demoDict)
+    time.sleep(0.5)

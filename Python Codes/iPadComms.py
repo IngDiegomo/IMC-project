@@ -60,7 +60,7 @@ def getDemoParams (socket):
     
     while demoData == 0:
         demoData = socket.recv(1024)
-        print(demoData)
+        print('recibi')
     demoDataJson = json.loads(demoData.decode())
     if "get_picture" in demoDataJson:
         demoDosingDay = demoDataJson["day"]

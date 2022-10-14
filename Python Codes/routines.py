@@ -354,7 +354,7 @@ def calculateNextDosingTime(socket, statusDict, dosageHour):
     today = datetime.date.today()
     nextDosification = datetime.datetime.combine(today,dosageHour)
 
-    statusDict["nextDose"] = str(nextDosification.hour) + " horas " + str(nextDosification.minute) + " minutos"
+    statusDict["nextDose"] = str(nextDosification.hour) + ":" + str(nextDosification.minute)
     iPadComms.sendJson(socket,statusDict)
     return statusDict, nextDosification
 
