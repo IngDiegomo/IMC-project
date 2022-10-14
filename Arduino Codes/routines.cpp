@@ -120,6 +120,15 @@ namespace routines
 
     }
 
+    void fillTankAndVerify(int scale, uint8_t valve)
+    {
+
+        fillTankWater(scale,valve);
+        delay(3000);
+        fillTankWater(scale,valve);
+
+    }
+
     void waterFilling()
     {
         char startWaterFilling;              // Variable to signal the start of water filling routine
@@ -128,27 +137,27 @@ namespace routines
         while (startWaterFilling != '1') startWaterFilling = Serial.read();   // Loop until the variable is 1
         while(Serial.available() > 0) Serial.read();
 
-        Serial.print('1');          // Send acknowledgement
+        Serial.print('1');                          // Send acknowledgement
         Serial.flush();
 
         digitalWrite(FILLING_VALVE_TANK,LOW);
 
-        Serial.print('n');                      // Send an 'n' meaning that the N tank is being filled
+        Serial.print('n');                          // Send an 'n' meaning that the N tank is being filled
         Serial.print('\n');
         Serial.flush();
-        fillTankWater(1,FILLING_VALVE_N);       // Fill the N tank
+        fillTankAndVerify(1,FILLING_VALVE_N);       // Fill the N tank
         
         Serial.print('p');                          
         Serial.print('\n');
         Serial.flush();
-        fillTankWater(2,FILLING_VALVE_P);       // Fill the P tank
+        fillTankAndVerify(2,FILLING_VALVE_P);       // Fill the P tank
         
         Serial.print('k');
         Serial.print('\n');
         Serial.flush();
-        fillTankWater(3,FILLING_VALVE_K);       // Fill the K tank
+        fillTankAndVerify(3,FILLING_VALVE_K);       // Fill the K tank
         
-        Serial.print('d');                      // Send a 'd' meaning the filling sequence is done
+        Serial.print('d');                          // Send a 'd' meaning the filling sequence is done
         Serial.print('\n');
         Serial.flush();
 
@@ -212,7 +221,7 @@ namespace routines
         digitalWrite(DOSE_PUMP_N,LOW);
         digitalWrite(DOSE_PUMP_P,LOW);
         digitalWrite(DOSE_PUMP_K,LOW);
-         wT = sensors::getScaleFiltered(4);
+        wT = sensors::getScaleFiltered(4);
 
 
 
@@ -476,13 +485,38 @@ namespace routines
                        /(conK*conN*conP))*1000;
 
         // Calculate the volume each tank has to have after dosing, considering an overshoot
-        volumeN = actualVolumeN - volumeToDoseN + nOvershoot;
-        volumeP = actualVolumeP - volumeToDoseP + pOvershoot;
-        volumeK = actualVolumeK - volumeToDoseK + kOvershoot;
+
+        if (volumeToDoseN > nOvershoot)
+        {
+            volumeN = actualVolumeN - volumeToDoseN + nOvershoot;    
+        }
+        else
+        {
+            volumeN = actualVolumeN - volumeToDoseN;
+        }
+        
+        if (volumeToDoseP > pOvershoot)
+        {
+            volumeP = actualVolumeP - volumeToDoseP + pOvershoot;    
+        }
+        else
+        {
+            volumeP = actualVolumeP - volumeToDoseP + 5;
+        }
+
+        if (volumeToDoseK > kOvershoot)
+        {
+            volumeK = actualVolumeK - volumeToDoseK + kOvershoot;    
+        }
+        else
+        {
+            volumeK = actualVolumeK - volumeToDoseK + 5;
+        }
+
         volumeTank = actualVolumeTank + volumeToDoseN + volumeToDoseP + volumeToDoseK + volumeToDoseTank;
 
         // This is for debugging
-        float debugVolumes[4] = {volumeToDoseN, volumeToDoseP, volumeToDoseK, volumeTank};
+        float debugVolumes[4] = {volumeToDoseN, volumeToDoseP, volumeToDoseK, volumeToDoseTank};
         for (int i = 0; i <4; i++)
         {
             Serial.print(debugVolumes[i],2);
@@ -583,16 +617,15 @@ namespace routines
 
     void refillATank()
     {
-        char tankToRefill;              // Variable to signal the start of nutrient filling routine
+        char tankToRefill = 0;              // Variable to signal the start of nutrient filling routine
         float refillReading = 0;
         char data;
         int next;
 
         while(!Serial.available());
         while (tankToRefill == 0) tankToRefill = Serial.read();   // Loop until the variable is different of 0
-        while(Serial.available() > 0) Serial.read();
-
-        Serial.print('1');          // Send acknowledgement
+        
+        Serial.write(tankToRefill);          // Send acknowledgement          
         Serial.flush();
         data = 0;
         next = 0;
@@ -611,25 +644,29 @@ namespace routines
                 break;
             
             case '2':
-                refillReading = 0;
+                
                 if (tankToRefill == '1')
                 {
-                    refillReading= sensors::getNValuesMedian(1, weigthVerificationNValues); // Get n value median of scale 1 (K scale)
-                    Serial.println(refillReading); 
+                    refillReading= sensors::getNValuesFiltered(1, weigthVerificationNValues); // Get n value median of scale 1 (K scale)
+                    Serial.print(refillReading); 
+                    Serial.print('\n');
+                    Serial.flush();
                 }
                 else if (tankToRefill == '2')
                 {
-                    refillReading= sensors::getNValuesMedian(2, weigthVerificationNValues); // Get n value median of scale 1 (K scale)
-                    Serial.println(refillReading); 
+                    refillReading= sensors::getNValuesFiltered(2, weigthVerificationNValues); // Get n value median of scale 1 (K scale)
+                    Serial.print(refillReading); 
+                    Serial.print('\n');
+                    Serial.flush();
                 }
                 else if (tankToRefill == '3')
                 {
-                    refillReading= sensors::getNValuesMedian(3, weigthVerificationNValues); // Get n value median of scale 1 (K scale)
-                    Serial.println(refillReading); 
-
+                    refillReading= sensors::getNValuesFiltered(3, weigthVerificationNValues); // Get n value median of scale 1 (K scale)
+                    Serial.print(refillReading); 
+                    Serial.print('\n');
+                    Serial.flush();
                 }
                 data = 0;
-                Serial.flush();
                 next = 0;
                 break;
             
@@ -639,6 +676,7 @@ namespace routines
                 break;
     
             default:
+                data = 0;
                 Serial.flush(); 
 
             }
@@ -648,13 +686,13 @@ namespace routines
         switch(tankToRefill)
         {
             case '1':                                   
-                fillTankWater(1,FILLING_VALVE_N);
+                fillTankAndVerify(1,FILLING_VALVE_N);
                 break;
             case '2':                                   
-                fillTankWater(2,FILLING_VALVE_P);
+                fillTankAndVerify(2,FILLING_VALVE_P);
                 break;
             case '3':                                   
-                fillTankWater(3,FILLING_VALVE_K);
+                fillTankAndVerify(3,FILLING_VALVE_K);
                 break;
 
             default:
@@ -740,9 +778,34 @@ namespace routines
                        /(conK*conN*conP))*1000;
 
         // Calculate the volume each tank has to have after dosing, considering an overshoot
-        volumeN = actualVolumeN - volumeToDoseN + nOvershoot;
-        volumeP = actualVolumeP - volumeToDoseP + pOvershoot;
-        volumeK = actualVolumeK - volumeToDoseK + kOvershoot;
+        
+        if (volumeToDoseN > nOvershoot)
+        {
+            volumeN = actualVolumeN - volumeToDoseN + nOvershoot;    
+        }
+        else
+        {
+            volumeN = actualVolumeN - volumeToDoseN;
+        }
+        
+        if (volumeToDoseP > pOvershoot)
+        {
+            volumeP = actualVolumeP - volumeToDoseP + pOvershoot;    
+        }
+        else
+        {
+            volumeP = actualVolumeP - volumeToDoseP + 5;
+        }
+
+        if (volumeToDoseK > kOvershoot)
+        {
+            volumeK = actualVolumeK - volumeToDoseK + kOvershoot;    
+        }
+        else
+        {
+            volumeK = actualVolumeK - volumeToDoseK + 5;
+        }
+
         volumeTank = actualVolumeTank + volumeToDoseN + volumeToDoseP + volumeToDoseK + volumeToDoseTank;
 
         // This is for debugging

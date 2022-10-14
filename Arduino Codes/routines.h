@@ -2,10 +2,10 @@
 #define ROUTINES_H
 #include "communication.h"
 
-#define TANKS_FILL_VALUE 3090*0.60
+#define TANKS_FILL_VALUE 3090*0.6
 #define MIXING_TIME_MS 20000
 #define MOTOR_DELAY_MS 1000
-#define PREFILL_DELAY_MS 2000
+#define PREFILL_DELAY_MS 1000
 #define VOLUME_PER_PLANT 0.508
 #define GRAMS_PER_PLANT 5 
 
@@ -19,6 +19,7 @@ namespace routines
     void weightVerification();
     void nutrientFilling();
     void fillTankWater(int scale, uint8_t valve);
+    void fillTankAndVerify(int scale, uint8_t valve);
     void waterFilling();
     int tryToMix();
     void mixing();

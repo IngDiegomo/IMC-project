@@ -94,7 +94,7 @@ void loop()
 
 
             case '3':
-                routines::refillATank();
+                //routines::refillATank();
                 Serial.flush();
                 data = 0;
                 break;
@@ -120,10 +120,12 @@ void loop()
                 routines::dosingDemo();
                 Serial.flush();
                 data = 0;
+                break;
             
             default:
                 data = 0;
                 Serial.flush();
+                
 
         }
     

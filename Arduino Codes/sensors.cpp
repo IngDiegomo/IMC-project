@@ -244,16 +244,29 @@ namespace sensors
 
     float updateDataN(float newX)
     {
-        const int treshold = 60;
         static float lastReadedVal=0;
         static float x[5] = {0};
         static float y[5] = {0};
+        const int admitedChange = 30;
+        float average;
+        static float lastVals[2] = {0};
         float temp;
         float b[5] = {0.12866723, 0.12866723, 0, 0, 0};  //M
         float a[5] = {1, -0.74266554, 0, 0, 0}; //N
         float nextY;
 
-        if(newX >0 or abs((newX-lastReadedVal))<treshold)
+        for (int i = 0; i < 2; i++)
+            {
+                average += lastVals[i];
+            }
+            average = average/2;
+        for (int i = 0; i < 1; i++)
+            {
+                lastVals[i] = lastVals[i + 1];
+            }
+            lastVals[1] = newX;
+            
+        if((newX > 0) and (abs((newX - average)/average)*100)<admitedChange)
         {
             nextY = (b[0]*newX + b[1]*x[4] + b[2]*x[3] + b[3]*x[2]+ b[4]*x[1] - a[1]*y[4] - a[2]*y[3] - a[3]*y[2] - a[4]*y[1]);
             // left shift
@@ -278,15 +291,29 @@ namespace sensors
 
       float updateDataP(float newX)
     {
-        const int treshold = 60;
         static float lastReadedVal=0;
         static float x[5] = {0};
         static float y[5] = {0};
+        const int admitedChange = 30;
+        float average;
+        static float lastVals[2] = {0};
+        float temp;
         float b[5] = {0.12866723, 0.12866723, 0, 0, 0};  //M
         float a[5] = {1, -0.74266554, 0, 0, 0}; //N
         float nextY;
 
-        if(newX >0 or abs((newX-lastReadedVal))<treshold)
+        for (int i = 0; i < 2; i++)
+            {
+                average += lastVals[i];
+            }
+            average = average/2;
+        for (int i = 0; i < 1; i++)
+            {
+                lastVals[i] = lastVals[i + 1];
+            }
+            lastVals[1] = newX;
+            
+        if((newX > 0) and (abs((newX - average)/average)*100)<admitedChange)
         {
             nextY = (b[0]*newX + b[1]*x[4] + b[2]*x[3] + b[3]*x[2]+ b[4]*x[1] - a[1]*y[4] - a[2]*y[3] - a[3]*y[2] - a[4]*y[1]);
             // left shift
@@ -303,21 +330,37 @@ namespace sensors
         }
         else
         {
+            temp = lastReadedVal;
+            
             return lastReadedVal;
         }
     }
 
       float updateDataK(float newX)
     {
-        const int treshold = 60;
         static float lastReadedVal=0;
         static float x[5] = {0};
         static float y[5] = {0};
+        const int admitedChange = 30;
+        float average;
+        static float lastVals[2] = {0};
+        float temp;
         float b[5] = {0.12866723, 0.12866723, 0, 0, 0};  //M
         float a[5] = {1, -0.74266554, 0, 0, 0}; //N
         float nextY;
 
-        if(newX >0 or abs((newX-lastReadedVal))<treshold)
+        for (int i = 0; i < 2; i++)
+            {
+                average += lastVals[i];
+            }
+            average = average/2;
+        for (int i = 0; i < 1; i++)
+            {
+                lastVals[i] = lastVals[i + 1];
+            }
+            lastVals[1] = newX;
+            
+        if((newX > 0) and (abs((newX - average)/average)*100)<admitedChange)
         {
             nextY = (b[0]*newX + b[1]*x[4] + b[2]*x[3] + b[3]*x[2]+ b[4]*x[1] - a[1]*y[4] - a[2]*y[3] - a[3]*y[2] - a[4]*y[1]);
             // left shift
@@ -334,21 +377,37 @@ namespace sensors
         }
         else
         {
+            temp = lastReadedVal;
+            
             return lastReadedVal;
         }
     }
 
       float updateDataTank(float newX)
     {
-        const int treshold = 60;
         static float lastReadedVal=0;
         static float x[5] = {0};
         static float y[5] = {0};
+        const int admitedChange = 30;
+        float average;
+        static float lastVals[2] = {0};
+        float temp;
         float b[5] = {0.12866723, 0.12866723, 0, 0, 0};  //M
         float a[5] = {1, -0.74266554, 0, 0, 0}; //N
         float nextY;
 
-        if(newX >0 or abs((newX-lastReadedVal))<treshold)
+        for (int i = 0; i < 2; i++)
+            {
+                average += lastVals[i];
+            }
+            average = average/2;
+        for (int i = 0; i < 1; i++)
+            {
+                lastVals[i] = lastVals[i + 1];
+            }
+            lastVals[1] = newX;
+            
+        if((newX > 0) and (abs((newX - average)/average)*100)<admitedChange)
         {
             nextY = (b[0]*newX + b[1]*x[4] + b[2]*x[3] + b[3]*x[2]+ b[4]*x[1] - a[1]*y[4] - a[2]*y[3] - a[3]*y[2] - a[4]*y[1]);
             // left shift
@@ -365,6 +424,8 @@ namespace sensors
         }
         else
         {
+            temp = lastReadedVal;
+            
             return lastReadedVal;
         }
     }
