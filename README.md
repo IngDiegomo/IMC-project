@@ -22,6 +22,6 @@ Archive of all the programs used in a smart hydroponics project of mechatronics 
 6. routines: This file contains all the routines that the project performs while functioning.
 7. main: Main python file of the project.
 
-All the python files with "test" on their name were used to test a specific feature befor writing the code.
+All the python files with "test" on their name were used to test a specific feature before writing the code.
 
 ### Arduino Codes
