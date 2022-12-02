@@ -25,3 +25,9 @@ Archive of all the programs used in a smart hydroponics project of mechatronics 
 All the python files with "test" on their name were used to test a specific feature before writing the code.
 
 ### Arduino Codes
+1. communication: Contains all the functions used in the serial communication between the Arduino and the Raspberry Pi.
+2. pinout: Contains the pin declarations of the Arduino, aswell as some constants used on the project.
+3. routines: Contains the routines of the irrigation processs, for example: water filling, dosing, mixing and irrigation.
+4. sensors: Contains all the functions related to sensors, their setup and how to read them.
+5. vaciar: Test program that was runned every time the nutrient tanks needed to be emptied.
+6. mata: Main program with all routines.
